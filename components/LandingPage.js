@@ -173,13 +173,17 @@ export default function LandingPage() {
   }, []);
 
   async function handleSignIn() {
+    // If demo bypass is active, skip OAuth entirely
+    if (process.env.NEXT_PUBLIC_DEV_AUTH_BYPASS === 'true') {
+      router.push('/?start=1');
+      return;
+    }
     if (configured) {
       // Production: trigger Google OAuth
       setSigningIn(true);
       try { await signInWithGoogle(); }
       catch { router.push('/?start=1'); setSigningIn(false); }
     } else {
-      // Dev / OAuth not yet wired up: go straight to inline onboarding
       router.push('/?start=1');
     }
   }
