@@ -1,0 +1,17 @@
+node_modules/
+.next/
+*.db
+*.db-shm
+*.db-wal
+.env
+
+# Temp / test files
+*.log
+dev.log
+ddg_test.html
+test.json
+test2.json
+search_result.json
+*tmpgen*.json
+UsersatrijStacksome*.json
+.claude/settings.local.json
