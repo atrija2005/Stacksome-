@@ -71,8 +71,17 @@ export default withAuth(async (req, res, user, supabase) => {
     combined = [...combined, ...extras];
   }
 
+  // Last resort: if ranking returned nothing but discovery pool has posts, serve them directly
+  if (combined.length === 0 && discoveryPool.length > 0) {
+    console.warn('[generate-list] Ranking returned 0 — falling back to raw discovery pool');
+    combined = discoveryPool
+      .sort((a, b) => (b._profileScore || 0) - (a._profileScore || 0))
+      .slice(0, TOTAL_TARGET)
+      .map(p => ({ ...p, section: 'discover', type: 'core', why: 'Matched to your reading profile.' }));
+  }
+
   if (combined.length === 0) {
-    return res.status(400).json({ error: 'No posts to rank. Add publications and fetch feeds, then try again.' });
+    return res.status(400).json({ error: 'Could not find posts right now. Please try again in a moment.' });
   }
   const weekLabel = getWeekLabel();
   await saveWeeklyList(supabase, user.id, weekLabel, combined);

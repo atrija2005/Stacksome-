@@ -95,20 +95,25 @@ export default function Home() {
   const router = useRouter();
   const toast  = useToast();
   const { user, loading: authLoading } = useAuth();
-  const [list,       setList]      = useState(null);
-  const [loading,    setLoading]   = useState(true);
-  const [fetching,   setFetching]  = useState(false);
-  const [generating, setGenning]   = useState(false);
-  const [genPhase,   setGenPhase]  = useState('idle');
-  const [refreshing, setRefreshing]= useState(false);
-  const [hasProfile, setHasProfile]= useState(true); // assume yes until proven otherwise
+  const [list,          setList]         = useState(null);
+  const [loading,       setLoading]      = useState(true);
+  const [fetching,      setFetching]     = useState(false);
+  const [generating,    setGenning]      = useState(false);
+  const [genPhase,      setGenPhase]     = useState('idle');
+  const [refreshing,    setRefreshing]   = useState(false);
+  const [hasProfile,    setHasProfile]   = useState(null); // null = still checking
   const autoFetchedRef = useRef(false);
 
+  // ── Auth gate: redirect unauthenticated users to landing ──────────────────
   useEffect(() => {
-    if (!user) { setLoading(false); return; }
-    loadList(); autoFetch(); checkProfile();
+    if (authLoading) return;
+    if (!user) { router.replace('/landing'); return; }
+    // User is present — load data and check profile
+    loadList();
+    autoFetch();
+    checkProfile();
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user]);
+  }, [user, authLoading]);
 
   async function loadList() {
     setLoading(true);
@@ -119,9 +124,15 @@ export default function Home() {
   async function checkProfile() {
     try {
       const p = await (await fetch('/api/profile')).json();
-      const pubs = await (await fetch('/api/publications')).json();
-      setHasProfile(!!(p?.interests?.trim()) && pubs.length > 0);
-    } catch { setHasProfile(false); }
+      const hasInterests = !!(p?.interests?.trim());
+      setHasProfile(hasInterests);
+      if (!hasInterests) {
+        router.replace('/setup');
+      }
+    } catch {
+      setHasProfile(false);
+      router.replace('/setup');
+    }
   }
 
   async function autoFetch() {
@@ -203,118 +214,25 @@ export default function Home() {
   const readCnt = Object.values(list?.signals || {}).filter(s => s.read).length;
   const readPct = allPosts.length ? Math.round((readCnt / allPosts.length) * 100) : 0;
 
-  /* ── First-time welcome (no profile + no list) ─────────────────────────── */
-  const showOnboarding = !loading && !hasList && !hasProfile;
-
-  /* ── Show landing page if not logged in ────────────────────────────────── */
-  // TODO: re-enable once Google OAuth is active
-  // if (!user) return <LandingPage />;
+  // While profile check is in flight, show loading skeleton (prevents flash of wrong state)
+  if (hasProfile === null) {
+    return (
+      <Layout>
+        <div>
+          <div className="section-rule" style={{ background: `linear-gradient(90deg, ${C.orange}, transparent)`, marginBottom: '1.5rem' }} />
+          {[...Array(4)].map((_, i) => <Skeleton key={i} />)}
+        </div>
+      </Layout>
+    );
+  }
 
   return (
     <Layout>
 
       {/* ══════════════════════════════════════════════════════════════════════
-          ONBOARDING HERO — shown to first-time users
-          ════════════════════════════════════════════════════════════════════ */}
-      {showOnboarding && (
-        <div className="anim-fade-in-up" style={{ padding: 'clamp(2rem,6vw,4rem) 0', textAlign: 'center' }}>
-
-          {/* Orange accent */}
-          <div style={{ display: 'flex', gap: 5, justifyContent: 'center', marginBottom: '2rem' }}>
-            <div style={{ width: 64, height: 3, borderRadius: 2, background: C.orange }} />
-          </div>
-
-          <h1 style={{
-            fontFamily: 'var(--font-display)',
-            fontVariationSettings: "'opsz' 72",
-            fontSize: 'clamp(2.4rem, 7vw, 4.2rem)',
-            fontWeight: 900, lineHeight: 1.08,
-            color: '#0a0a0a', marginBottom: '1.25rem',
-            letterSpacing: '-.02em',
-          }}>
-            Your personal Substack<br />reading intelligence
-          </h1>
-
-          <p style={{
-            fontFamily: 'var(--font-body)',
-            fontSize: 'clamp(.95rem, 2vw, 1.15rem)',
-            color: '#555', lineHeight: 1.75,
-            maxWidth: 560, margin: '0 auto 2.5rem',
-          }}>
-            Stacksome finds the best posts across thousands of Substack newsletters
-            and curates a 10-post reading list built specifically around who you are
-            and who you want to become.
-          </p>
-
-          {/* CTA */}
-          <button
-            className="btn btn-primary"
-            onClick={() => router.push('/setup')}
-            style={{
-              fontSize: '1rem', padding: '14px 36px',
-              borderRadius: 8,
-            }}
-          >
-            Get Started
-          </button>
-
-          {/* Feature cards */}
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
-            gap: '1.25rem',
-            marginTop: 'clamp(3rem, 6vw, 5rem)',
-            textAlign: 'left',
-          }}>
-            {[
-              {
-                icon: '\uD83D\uDD2D', color: C.orange, title: 'Fresh Discoveries',
-                desc: 'Posts from publications you have never seen, matched to your intellectual profile.',
-              },
-              {
-                icon: '\uD83D\uDCDA', color: C.blue, title: 'From Your Stack',
-                desc: 'The best posts from the Substack writers you already follow and trust.',
-              },
-              {
-                icon: '\u2728', color: '#0a0a0a', title: 'Gets Smarter Over Time',
-                desc: 'Every upvote and downvote refines your taste. Claude rewrites your profile as you read.',
-              },
-            ].map(f => (
-              <div
-                key={f.title}
-                className="anim-fade-in-up"
-                style={{
-                  padding: '1.75rem',
-                  border: `1.5px solid ${C.rule}`,
-                  borderRadius: 8,
-                  background: '#fff',
-                  animationDelay: `${300 + [C.orange, C.blue, '#0a0a0a'].indexOf(f.color) * 120}ms`,
-                }}
-              >
-                <div style={{ fontSize: '1.6rem', marginBottom: '.75rem' }}>{f.icon}</div>
-                <h3 style={{
-                  fontFamily: 'var(--font-display)', fontSize: '1.1rem',
-                  fontWeight: 700, color: '#0a0a0a', marginBottom: '.4rem',
-                }}>
-                  {f.title}
-                </h3>
-                <p style={{
-                  fontFamily: 'var(--font-body)', fontSize: '.85rem',
-                  color: C.muted, lineHeight: 1.6,
-                }}>
-                  {f.desc}
-                </p>
-                <div style={{ height: 3, width: 40, borderRadius: 2, background: f.color, marginTop: '1rem', opacity: .6 }} />
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* ══════════════════════════════════════════════════════════════════════
           EMPTY STATE — has profile but no list yet
           ════════════════════════════════════════════════════════════════════ */}
-      {!loading && !hasList && hasProfile && (
+      {!loading && !hasList && (
         <div className="anim-fade-in-up" style={{ padding: '3rem 0', textAlign: 'center' }}>
           <div style={{ fontSize: '2.5rem', marginBottom: '1.25rem' }}>✦</div>
           <h2 style={{

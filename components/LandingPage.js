@@ -173,7 +173,15 @@ export default function LandingPage() {
   }, []);
 
   async function handleSignIn() {
-    router.push('/');
+    if (configured) {
+      // Production: trigger Google OAuth
+      setSigningIn(true);
+      try { await signInWithGoogle(); }
+      catch { router.push('/setup'); setSigningIn(false); }
+    } else {
+      // Dev / OAuth not yet wired up: go straight to onboarding
+      router.push('/setup');
+    }
   }
 
   const marqueeAll = [...MARQUEE_ITEMS, ...MARQUEE_ITEMS];
