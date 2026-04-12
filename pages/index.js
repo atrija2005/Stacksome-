@@ -114,22 +114,21 @@ export default function Home() {
     if (authLoading) return;
     if (!user) { setHasProfile(false); setLoading(false); return; }
     loadList();
-    checkProfile();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, authLoading]);
 
   async function loadList() {
     setLoading(true);
-    try { setList(await (await fetch('/api/weekly-list')).json()); }
-    finally { setLoading(false); }
-  }
-
-  async function checkProfile() {
     try {
-      const p = await (await fetch('/api/profile')).json();
-      setHasProfile(!!(p?.interests?.trim()));
+      const data = await (await fetch('/api/weekly-list')).json();
+      setList(data);
+      // If list has posts, mark profile as existing (skip landing page)
+      if (data?.posts_json?.length > 0) setHasProfile(true);
+      else setHasProfile(false);
     } catch {
       setHasProfile(false);
+    } finally {
+      setLoading(false);
     }
   }
 
@@ -138,6 +137,7 @@ export default function Home() {
     const interests = interestInput.trim();
     if (!interests || buildingFirst) return;
     setBuildingFirst(true);
+    setHasProfile(true); // prevent flash back to landing page during build
 
     setBuildPhase('Saving your interests…');
     await fetch('/api/profile', {
@@ -249,8 +249,8 @@ export default function Home() {
     );
   }
 
-  // No profile (or not logged in) AND not coming from "Get Started" — show landing page
-  if (!hasProfile && !forceStart) {
+  // No list yet AND user didn't just click "Get Started" — show marketing landing page
+  if (!hasProfile && !forceStart && !buildingFirst) {
     return <LandingPage />;
   }
 
