@@ -102,15 +102,18 @@ export default function Home() {
   const [genPhase,      setGenPhase]     = useState('idle');
   const [refreshing,    setRefreshing]   = useState(false);
   const [hasProfile,    setHasProfile]   = useState(null); // null = still checking
+  // Inline onboarding state
+  const [interestInput, setInterestInput] = useState('');
+  const [buildingFirst, setBuildingFirst] = useState(false);
+  const [buildPhase,    setBuildPhase]    = useState('');
+  // ?start=1 forces the input form (e.g. from "Get Started" on landing page)
+  const forceStart = router.query.start === '1';
   const autoFetchedRef = useRef(false);
 
-  // ── Auth gate: redirect unauthenticated users to landing ──────────────────
   useEffect(() => {
     if (authLoading) return;
-    if (!user) { router.replace('/landing'); return; }
-    // User is present — load data and check profile
+    if (!user) { setHasProfile(false); setLoading(false); return; }
     loadList();
-    autoFetch();
     checkProfile();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, authLoading]);
@@ -124,27 +127,47 @@ export default function Home() {
   async function checkProfile() {
     try {
       const p = await (await fetch('/api/profile')).json();
-      const hasInterests = !!(p?.interests?.trim());
-      setHasProfile(hasInterests);
-      if (!hasInterests) {
-        router.replace('/setup');
-      }
+      setHasProfile(!!(p?.interests?.trim()));
     } catch {
       setHasProfile(false);
-      router.replace('/setup');
     }
   }
 
-  async function autoFetch() {
-    if (autoFetchedRef.current) return;
-    autoFetchedRef.current = true;
-    const last = localStorage.getItem('ss_last_fetch');
-    if (last && Date.now() - +last < AUTO_FETCH_H * 3.6e6) return;
+  // Called when user submits their interests from the empty state
+  async function handleBuildFirst() {
+    const interests = interestInput.trim();
+    if (!interests || buildingFirst) return;
+    setBuildingFirst(true);
+
+    setBuildPhase('Saving your interests…');
+    await fetch('/api/profile', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ interests }),
+    }).catch(() => {});
+    setHasProfile(true);
+
+    setBuildPhase('Scanning Substack for matching reads…');
+    await fetch('/api/fetch-feeds', { method: 'POST' }).catch(() => {});
+
+    setBuildPhase('Claude is picking your first 10 posts…');
     try {
-      const d = await (await fetch('/api/fetch-feeds', { method: 'POST' })).json();
-      localStorage.setItem('ss_last_fetch', String(Date.now()));
-      if (d.fetched > 0) toast(`Auto-fetched ${d.fetched} new posts`, 'info');
-    } catch {}
+      const d = await (await fetch('/api/generate-list', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({}),
+      })).json();
+      if (d.error) { toast(d.error, 'error'); setBuildingFirst(false); setBuildPhase(''); return; }
+    } catch {
+      toast('Something went wrong — try again', 'error');
+      setBuildingFirst(false); setBuildPhase('');
+      return;
+    }
+
+    setBuildPhase('Done — loading your list…');
+    await loadList();
+    setBuildingFirst(false);
+    setBuildPhase('');
+    // Remove ?start=1 from URL so normal view shows
+    router.replace('/', undefined, { shallow: true });
   }
 
   async function handleFetch() {
@@ -214,49 +237,149 @@ export default function Home() {
   const readCnt = Object.values(list?.signals || {}).filter(s => s.read).length;
   const readPct = allPosts.length ? Math.round((readCnt / allPosts.length) * 100) : 0;
 
-  // While profile check is in flight, show loading skeleton (prevents flash of wrong state)
-  if (hasProfile === null) {
+  // Still checking auth/profile — show nothing to prevent flash
+  if (authLoading || hasProfile === null) {
     return (
       <Layout>
         <div>
           <div className="section-rule" style={{ background: `linear-gradient(90deg, ${C.orange}, transparent)`, marginBottom: '1.5rem' }} />
-          {[...Array(4)].map((_, i) => <Skeleton key={i} />)}
+          {[...Array(3)].map((_, i) => <Skeleton key={i} />)}
         </div>
       </Layout>
     );
+  }
+
+  // No profile (or not logged in) AND not coming from "Get Started" — show landing page
+  if (!hasProfile && !forceStart) {
+    return <LandingPage />;
   }
 
   return (
     <Layout>
 
       {/* ══════════════════════════════════════════════════════════════════════
-          EMPTY STATE — has profile but no list yet
+          EMPTY STATE — interest input + one-click build
           ════════════════════════════════════════════════════════════════════ */}
-      {!loading && !hasList && (
-        <div className="anim-fade-in-up" style={{ padding: '3rem 0', textAlign: 'center' }}>
-          <div style={{ fontSize: '2.5rem', marginBottom: '1.25rem' }}>✦</div>
-          <h2 style={{
-            fontFamily: 'var(--font-display)', fontVariationSettings: "'opsz' 36",
-            fontSize: 'clamp(1.6rem,4vw,2.4rem)',
-            fontWeight: 900, color: '#0a0a0a', marginBottom: '.6rem',
-          }}>
-            Your reading list awaits
-          </h2>
-          <p style={{
-            fontFamily: 'var(--font-body)', fontSize: '1rem',
-            color: C.muted, marginBottom: '2.5rem',
-          }}>
-            Fetch your feeds and generate your first curriculum.
-          </p>
+      {!loading && (!hasList || forceStart || buildingFirst) && (
+        <div className="anim-fade-in-up" style={{ maxWidth: 560, margin: '4rem auto', padding: '0 1rem' }}>
 
-          <div style={{ display: 'flex', justifyContent: 'center', gap: '1rem', flexWrap: 'wrap' }}>
-            <button className="btn btn-secondary" onClick={handleFetch} disabled={fetching}>
-              {fetching ? <><span className="spinner spinner-dark" /> Fetching...</> : '\u21BB Fetch Feeds'}
-            </button>
-            <button className="btn btn-primary" onClick={handleGenerate} disabled={generating}>
-              {generating ? <><span className="spinner" /> {genPhase === 'discovering' ? 'Discovering...' : 'Curating...'}</> : '\u2726 Generate List'}
-            </button>
-          </div>
+          {/* Building overlay */}
+          {buildingFirst && (
+            <div style={{ textAlign: 'center', padding: '2rem 0' }}>
+              <div style={{
+                width: 52, height: 52, borderRadius: '50%',
+                background: `radial-gradient(circle at 35% 35%, ${C.orange}, #c94a00)`,
+                margin: '0 auto 1.5rem',
+                boxShadow: `0 0 40px ${C.orange}55`,
+                animation: 'orbFloat 2s ease-in-out infinite',
+              }} />
+              <h2 style={{
+                fontFamily: 'var(--font-display)', fontVariationSettings: "'opsz' 36",
+                fontSize: 'clamp(1.4rem,4vw,2rem)', fontWeight: 900,
+                color: '#0a0a0a', marginBottom: '.5rem',
+              }}>
+                Building your list…
+              </h2>
+              <p style={{
+                fontFamily: 'var(--font-body)', fontSize: '.9rem',
+                color: C.muted, marginBottom: '1.75rem', lineHeight: 1.7,
+              }}>
+                {buildPhase}
+              </p>
+              <div style={{ height: 4, background: '#f0ede8', borderRadius: 2, overflow: 'hidden' }}>
+                <div style={{
+                  height: '100%', background: C.orange, borderRadius: 2,
+                  animation: 'progressFill 18s ease-out forwards',
+                }} />
+              </div>
+              <style>{`
+                @keyframes progressFill { 0%{width:3%} 30%{width:35%} 65%{width:72%} 90%{width:91%} 100%{width:96%} }
+                @keyframes orbFloat { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-8px)} }
+              `}</style>
+            </div>
+          )}
+
+          {/* Input form */}
+          {!buildingFirst && (
+            <>
+              <div style={{ textAlign: 'center', marginBottom: '2.5rem' }}>
+                <div style={{
+                  width: 44, height: 44, borderRadius: 12,
+                  background: C.orange, margin: '0 auto 1.25rem',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  fontSize: '1.3rem',
+                }}>
+                  ✦
+                </div>
+                <h2 style={{
+                  fontFamily: 'var(--font-display)', fontVariationSettings: "'opsz' 36",
+                  fontSize: 'clamp(1.6rem,4vw,2.2rem)',
+                  fontWeight: 900, color: '#0a0a0a', marginBottom: '.5rem',
+                }}>
+                  What do you want to read about?
+                </h2>
+                <p style={{
+                  fontFamily: 'var(--font-body)', fontSize: '.95rem',
+                  color: C.muted, lineHeight: 1.65,
+                }}>
+                  Type anything — topics, industries, ideas, questions. We'll find the best Substack posts that match.
+                </p>
+              </div>
+
+              <textarea
+                value={interestInput}
+                onChange={e => setInterestInput(e.target.value)}
+                onKeyDown={e => {
+                  if (e.key === 'Enter' && (e.metaKey || e.ctrlKey) && interestInput.trim()) {
+                    handleBuildFirst();
+                  }
+                }}
+                rows={4}
+                placeholder={
+                  "Examples:\n" +
+                  "\"AI, startups, manufacturing, geopolitics\"\n" +
+                  "\"I'm building a fintech startup and want to stay sharp on markets\"\n" +
+                  "\"Philosophy, economics, long-form essays that make me think\""
+                }
+                style={{
+                  width: '100%', boxSizing: 'border-box',
+                  fontFamily: 'var(--font-body)', fontSize: '.95rem',
+                  padding: '16px 18px',
+                  border: `2px solid ${interestInput.trim() ? C.orange : '#e5e5e5'}`,
+                  borderRadius: 12, outline: 'none', color: '#0a0a0a',
+                  lineHeight: 1.7, resize: 'none', background: '#fafaf8',
+                  transition: 'border-color .2s',
+                  marginBottom: '1rem',
+                }}
+              />
+
+              <button
+                onClick={handleBuildFirst}
+                disabled={!interestInput.trim()}
+                style={{
+                  width: '100%', padding: '15px',
+                  borderRadius: 10,
+                  background: interestInput.trim() ? C.orange : '#e5e5e5',
+                  color: interestInput.trim() ? '#fff' : '#aaa',
+                  fontFamily: 'var(--font-body)', fontSize: '1rem', fontWeight: 700,
+                  border: 'none',
+                  cursor: interestInput.trim() ? 'pointer' : 'not-allowed',
+                  boxShadow: interestInput.trim() ? `0 4px 20px ${C.orange}44` : 'none',
+                  transition: 'all .2s',
+                  marginBottom: '.75rem',
+                }}
+              >
+                ✦ Find my reads
+              </button>
+
+              <p style={{
+                fontFamily: 'var(--font-body)', fontSize: '.75rem',
+                color: C.muted, textAlign: 'center',
+              }}>
+                ⌘ + Enter · Takes ~15 seconds · Searches across 100+ Substack publications
+              </p>
+            </>
+          )}
         </div>
       )}
 

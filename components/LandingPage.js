@@ -177,10 +177,10 @@ export default function LandingPage() {
       // Production: trigger Google OAuth
       setSigningIn(true);
       try { await signInWithGoogle(); }
-      catch { router.push('/setup'); setSigningIn(false); }
+      catch { router.push('/?start=1'); setSigningIn(false); }
     } else {
-      // Dev / OAuth not yet wired up: go straight to onboarding
-      router.push('/setup');
+      // Dev / OAuth not yet wired up: go straight to inline onboarding
+      router.push('/?start=1');
     }
   }
 
