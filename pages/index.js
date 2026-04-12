@@ -260,7 +260,7 @@ export default function Home() {
       {/* ══════════════════════════════════════════════════════════════════════
           EMPTY STATE — interest input + one-click build
           ════════════════════════════════════════════════════════════════════ */}
-      {!loading && (!hasList || forceStart || buildingFirst) && (
+      {!loading && (forceStart || buildingFirst || !hasList) && (
         <div className="anim-fade-in-up" style={{ maxWidth: 560, margin: '4rem auto', padding: '0 1rem' }}>
 
           {/* Building overlay */}
@@ -384,9 +384,9 @@ export default function Home() {
       )}
 
       {/* ══════════════════════════════════════════════════════════════════════
-          TOOLBAR — shown when a list exists
+          TOOLBAR — shown when a list exists and not in onboarding flow
           ════════════════════════════════════════════════════════════════════ */}
-      {!loading && hasList && (
+      {!loading && hasList && !forceStart && !buildingFirst && (
         <>
           <div style={{
             display: 'flex', alignItems: 'center', justifyContent: 'space-between',
