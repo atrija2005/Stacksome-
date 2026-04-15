@@ -147,13 +147,13 @@ export default function Home() {
     setHasProfile(true);
 
     setBuildPhase('Scanning Substack for matching reads…');
-    await fetch('/api/fetch-feeds', { method: 'POST' }).catch(() => {});
 
-    setBuildPhase('Claude is picking your first 10 posts…');
+    setBuildPhase('Claude is picking your posts…');
     try {
+      // Pass interests directly so it works even if DB save failed
       const d = await (await fetch('/api/generate-list', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({}),
+        body: JSON.stringify({ interests }),
       })).json();
       if (d.error) { toast(d.error, 'error'); setBuildingFirst(false); setBuildPhase(''); return; }
     } catch {
