@@ -27,6 +27,7 @@ export default function PostCard({ post, index, weekLabel, initialSignals = {}, 
   const [signals, setSignals] = useState(initialSignals[post.url] || {});
   const [loading, setLoading] = useState(false);
   const [hovered, setHovered] = useState(false);
+  const [tldrOpen, setTldrOpen] = useState(false);
 
   const s      = SECTION_STYLES[post.section] || SECTION_STYLES[post.type] || SECTION_STYLES.discover;
   const isRead = !!signals.read;
@@ -185,6 +186,49 @@ export default function PostCard({ post, index, weekLabel, initialSignals = {}, 
         >
           {post.title}
         </a>
+
+        {/* TL;DR — expandable quick take */}
+        {post.tldr && (
+          <div style={{ marginBottom: '.6rem' }}>
+            <button
+              onClick={() => setTldrOpen(o => !o)}
+              style={{
+                display: 'inline-flex', alignItems: 'center', gap: '.3rem',
+                fontFamily: 'var(--font-body)', fontSize: '.65rem', fontWeight: 700,
+                letterSpacing: '.08em', textTransform: 'uppercase',
+                color: tldrOpen ? s.accent : '#aaa',
+                background: 'none', border: 'none', cursor: 'pointer',
+                padding: '0 0 .4rem',
+                transition: 'color .15s',
+              }}
+            >
+              <span style={{
+                display: 'inline-block',
+                transform: tldrOpen ? 'rotate(90deg)' : 'rotate(0deg)',
+                transition: 'transform .18s ease',
+                fontSize: '.6rem',
+              }}>▶</span>
+              Quick take
+            </button>
+            {tldrOpen && (
+              <div style={{
+                padding: '.65rem .9rem',
+                background: isRead ? '#F7F6F4' : s.accentBg,
+                borderRadius: 8,
+                borderLeft: `2px solid ${isRead ? '#DDD' : s.accent}`,
+                animation: 'fadeInUp .2s ease both',
+              }}>
+                <p style={{
+                  fontFamily: 'var(--font-body)', fontSize: '.82rem',
+                  color: isRead ? '#bbb' : '#444',
+                  lineHeight: 1.7, margin: 0,
+                }}>
+                  {post.tldr}
+                </p>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Excerpt */}
         {excerpt && (
