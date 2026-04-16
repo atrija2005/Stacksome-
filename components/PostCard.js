@@ -1,10 +1,10 @@
 import { useState } from 'react';
 import { useToast } from './Toast';
 
-const TYPE = {
-  core:     { label: 'On-Profile', color: '#FF6719', light: '#FFF3EC' },
-  adjacent: { label: 'Adjacent',   color: '#0050c8', light: '#f0f5ff' },
-  wild:     { label: 'Discovery',  color: '#FF6719', light: '#FFF3EC' },
+const SECTION_STYLES = {
+  discover: { accent: '#FF6719', accentBg: '#FFF3EC', label: 'Fresh Pick' },
+  stack:    { accent: '#0050c8', accentBg: '#EEF3FF', label: 'Your Stack' },
+  core:     { accent: '#FF6719', accentBg: '#FFF3EC', label: 'Curated'   },
 };
 
 const REFINE_MILESTONES = new Set([5, 10, 20, 35]);
@@ -12,7 +12,14 @@ const REFINE_MILESTONES = new Set([5, 10, 20, 35]);
 function truncate(s, n) {
   if (!s) return '';
   const c = s.replace(/\s+/g, ' ').trim();
-  return c.length > n ? c.slice(0, n).replace(/\s\S*$/, '') + '\u2026' : c;
+  return c.length > n ? c.slice(0, n).replace(/\s\S*$/, '') + '…' : c;
+}
+
+function formatDate(iso) {
+  if (!iso) return '';
+  try {
+    return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  } catch { return ''; }
 }
 
 export default function PostCard({ post, index, weekLabel, initialSignals = {}, readOnly = false, animDelay = 0 }) {
@@ -21,9 +28,11 @@ export default function PostCard({ post, index, weekLabel, initialSignals = {}, 
   const [loading, setLoading] = useState(false);
   const [hovered, setHovered] = useState(false);
 
-  const t       = TYPE[post.type] || TYPE.core;
-  const isRead  = !!signals.read;
-  const excerpt = truncate(post.description, 160);
+  const s      = SECTION_STYLES[post.section] || SECTION_STYLES[post.type] || SECTION_STYLES.discover;
+  const isRead = !!signals.read;
+  const excerpt = truncate(post.description, 180);
+  const date    = formatDate(post.published_at);
+  const pubName = post.publication_name || post.publication || '';
 
   async function sendSignal(sig) {
     if (readOnly || loading) return;
@@ -34,16 +43,14 @@ export default function PostCard({ post, index, weekLabel, initialSignals = {}, 
         body: JSON.stringify({ postUrl: post.url, signal: sig, weekLabel }),
       });
       const data = await res.json();
-
       setSignals(prev => {
         const n = { ...prev };
         if (sig === 'up' || sig === 'down') { delete n.up; delete n.down; }
         n[sig] = true;
         return n;
       });
-
       if (sig === 'up' && data.upCount && REFINE_MILESTONES.has(data.upCount)) {
-        toast(`${data.upCount} upvotes \u2014 refining your profile\u2026`, 'info');
+        toast(`${data.upCount} upvotes — refining your profile…`, 'info');
         autoRefine(data.upCount);
       }
     } finally { setLoading(false); }
@@ -53,78 +60,110 @@ export default function PostCard({ post, index, weekLabel, initialSignals = {}, 
     try {
       const r = await fetch('/api/refine-profile', { method: 'POST' });
       const d = await r.json();
-      if (d.success) {
-        toast(
-          d.fallback
-            ? 'Profile updated from your reading signals'
-            : `Profile refined \u00b7 ${count} upvotes analysed by Claude`,
-          'success'
-        );
-      }
+      if (d.success) toast(d.fallback ? 'Profile updated' : `Profile refined · ${count} upvotes analysed`, 'success');
     } catch { /* silent */ }
   }
 
   return (
     <article
-      className="post-card anim-slide-up"
+      className="anim-fade-in-up"
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       style={{
-        display: 'flex',
-        border: `1px solid ${hovered ? '#c8c4be' : '#E5E5E5'}`,
-        borderTop: `3px solid ${isRead ? '#D0CCCA' : t.color}`,
-        borderRadius: 8,
-        marginBottom: '1rem',
-        background: isRead ? '#FAFAFA' : '#fff',
-        opacity: isRead ? .65 : 1,
+        display: 'grid',
+        gridTemplateColumns: '56px 1fr',
+        gap: 0,
+        borderRadius: 14,
+        marginBottom: '1.1rem',
+        background: isRead ? '#F9F8F7' : '#fff',
+        border: `1px solid ${hovered && !isRead ? '#d4cfc9' : '#ECEAE6'}`,
+        boxShadow: hovered && !isRead
+          ? `0 12px 40px rgba(0,0,0,.09), 0 2px 8px rgba(0,0,0,.04), -3px 0 0 ${s.accent}`
+          : `-3px 0 0 ${isRead ? '#D5D2CE' : s.accent}, 0 2px 8px rgba(0,0,0,.03)`,
+        opacity: isRead ? .6 : 1,
+        transition: 'box-shadow .22s ease, border-color .15s ease, opacity .2s, transform .22s ease',
+        transform: hovered && !isRead ? 'translateY(-3px)' : 'none',
         animationDelay: `${animDelay}ms`,
-        transition: 'opacity .2s, border-color .15s, box-shadow .2s',
-        boxShadow: hovered && !isRead ? '0 8px 32px rgba(0,0,0,.07)' : 'none',
-        position: 'relative', overflow: 'hidden',
+        overflow: 'hidden',
+        position: 'relative',
       }}
     >
-      {/* Watermark number */}
-      <div className="card-number" style={{
-        position: 'absolute', right: '1rem', bottom: '-.5rem',
-        fontFamily: 'var(--font-display)',
-        fontVariationSettings: "'opsz' 144",
-        fontSize: '7rem', fontWeight: 900, lineHeight: 1,
-        color: isRead ? '#f0eee8' : t.light,
-        userSelect: 'none', pointerEvents: 'none',
-        transition: 'color .2s', zIndex: 0,
+      {/* ── Left number column ── */}
+      <div style={{
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'flex-start',
+        paddingTop: '1.4rem',
+        background: isRead ? 'transparent' : hovered ? s.accentBg : 'transparent',
+        transition: 'background .22s ease',
+        borderRight: `1px solid ${isRead ? '#ECEAE6' : hovered ? s.accent + '33' : '#ECEAE6'}`,
       }}>
-        {String(index).padStart(2, '0')}
+        <span style={{
+          fontFamily: 'var(--font-display)',
+          fontVariationSettings: "'opsz' 72",
+          fontSize: '1.15rem',
+          fontWeight: 900,
+          color: isRead ? '#ccc' : hovered ? s.accent : '#D4D0CB',
+          lineHeight: 1,
+          transition: 'color .22s ease',
+          letterSpacing: '-.03em',
+        }}>
+          {String(index).padStart(2, '0')}
+        </span>
       </div>
 
-      {/* Content */}
-      <div className="card-content" style={{ flex: 1, padding: '1.3rem 1.5rem', position: 'relative', zIndex: 1 }}>
+      {/* ── Main content ── */}
+      <div style={{ padding: '1.25rem 1.4rem 1.1rem', minWidth: 0 }}>
 
-        {/* Badge row */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '.5rem', marginBottom: '.6rem', flexWrap: 'wrap' }}>
+        {/* Top meta row */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '.5rem', marginBottom: '.65rem', flexWrap: 'wrap' }}>
+          {/* Section badge */}
           <span style={{
-            fontFamily: 'var(--font-body)', fontSize: '.65rem', fontWeight: 700,
+            fontFamily: 'var(--font-body)', fontSize: '.6rem', fontWeight: 800,
             letterSpacing: '.1em', textTransform: 'uppercase',
-            padding: '3px 10px', background: t.color, color: '#fff',
-            borderRadius: 4, flexShrink: 0,
+            padding: '3px 9px', borderRadius: 4,
+            background: isRead ? '#E8E6E2' : s.accent,
+            color: isRead ? '#999' : '#fff',
+            flexShrink: 0,
           }}>
-            {t.label}
+            {s.label}
           </span>
+
+          {/* Publication name — most important meta */}
+          {pubName && (
+            <span style={{
+              fontFamily: 'var(--font-body)', fontSize: '.78rem', fontWeight: 700,
+              color: isRead ? '#bbb' : '#333',
+              flexShrink: 0,
+              overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+              maxWidth: 200,
+            }}>
+              {pubName}
+            </span>
+          )}
+
           {post.topic && (
             <span style={{
-              fontFamily: 'var(--font-body)', fontSize: '.65rem', fontWeight: 600,
+              fontFamily: 'var(--font-body)', fontSize: '.63rem', fontWeight: 600,
               letterSpacing: '.06em', textTransform: 'uppercase',
-              padding: '3px 9px',
-              background: isRead ? '#f0eeeb' : '#f5f4f1',
-              color: isRead ? '#bbb' : '#777',
-              borderRadius: 4, flexShrink: 0,
-              border: '1px solid #e8e6e2',
+              padding: '2px 8px', borderRadius: 3,
+              background: '#F4F3F0', color: '#888',
+              border: '1px solid #E8E6E2',
+              flexShrink: 0,
             }}>
               {post.topic}
             </span>
           )}
-          <span style={{ fontFamily: 'var(--font-body)', fontSize: '.8rem', color: '#888', fontWeight: 500 }}>
-            {post.publication}
-          </span>
+
+          {date && (
+            <span style={{
+              fontFamily: 'var(--font-body)', fontSize: '.72rem',
+              color: '#bbb', marginLeft: 'auto', flexShrink: 0,
+            }}>
+              {date}
+            </span>
+          )}
         </div>
 
         {/* Title */}
@@ -132,15 +171,17 @@ export default function PostCard({ post, index, weekLabel, initialSignals = {}, 
           href={post.url} target="_blank" rel="noopener noreferrer"
           onClick={() => !isRead && sendSignal('read')}
           style={{
-            display: 'block', marginBottom: '.45rem',
+            display: 'block', marginBottom: excerpt ? '.5rem' : '.7rem',
             fontFamily: 'var(--font-display)',
-            fontVariationSettings: "'opsz' 18",
-            fontSize: 'clamp(1rem, 2.2vw, 1.18rem)', fontWeight: 700, lineHeight: 1.35,
-            color: isRead ? '#aaa' : '#0f0f0f', textDecoration: 'none',
-            transition: 'color .15s',
+            fontVariationSettings: `'opsz' ${hovered ? '24' : '18'}`,
+            fontSize: 'clamp(1.05rem, 2.4vw, 1.22rem)',
+            fontWeight: 800,
+            lineHeight: 1.28,
+            color: isRead ? '#AAA' : hovered ? s.accent : '#0D0D0D',
+            textDecoration: 'none',
+            transition: 'color .18s ease',
+            letterSpacing: '-.01em',
           }}
-          onMouseEnter={e => { if (!isRead) e.currentTarget.style.color = t.color; }}
-          onMouseLeave={e => { e.currentTarget.style.color = isRead ? '#aaa' : '#0f0f0f'; }}
         >
           {post.title}
         </a>
@@ -148,8 +189,9 @@ export default function PostCard({ post, index, weekLabel, initialSignals = {}, 
         {/* Excerpt */}
         {excerpt && (
           <p style={{
-            fontFamily: 'var(--font-body)', fontSize: '.83rem', color: '#666',
-            lineHeight: 1.7, marginBottom: '.6rem',
+            fontFamily: 'var(--font-body)', fontSize: '.83rem',
+            color: isRead ? '#bbb' : '#666',
+            lineHeight: 1.72, marginBottom: '.75rem',
             display: '-webkit-box', WebkitLineClamp: 2,
             WebkitBoxOrient: 'vertical', overflow: 'hidden',
           }}>
@@ -157,58 +199,112 @@ export default function PostCard({ post, index, weekLabel, initialSignals = {}, 
           </p>
         )}
 
-        {/* Why */}
-        <div style={{ display: 'flex', gap: '.4rem', marginBottom: '.9rem', alignItems: 'flex-start' }}>
-          <span style={{ color: t.color, fontSize: '.9rem', lineHeight: 1.6, flexShrink: 0, fontWeight: 700 }}>\u203a</span>
-          <p style={{
-            fontFamily: 'var(--font-display)',
-            fontVariationSettings: "'opsz' 14",
-            fontSize: '.83rem', fontStyle: 'italic',
-            color: '#444', lineHeight: 1.65,
+        {/* Why — pull quote style */}
+        {post.why && (
+          <div style={{
+            display: 'flex', gap: '.55rem', alignItems: 'flex-start',
+            marginBottom: '1rem',
+            padding: '.6rem .8rem',
+            background: isRead ? '#F7F6F4' : hovered ? s.accentBg : '#FAFAF8',
+            borderLeft: `2.5px solid ${isRead ? '#DDD' : s.accent}`,
+            borderRadius: '0 6px 6px 0',
+            transition: 'background .22s ease',
           }}>
-            {post.why}
-          </p>
-        </div>
+            <span style={{
+              fontFamily: 'var(--font-body)', fontSize: '.72rem', fontWeight: 700,
+              letterSpacing: '.06em', textTransform: 'uppercase',
+              color: isRead ? '#ccc' : s.accent, flexShrink: 0, marginTop: 1,
+            }}>
+              Why
+            </span>
+            <p style={{
+              fontFamily: 'var(--font-display)',
+              fontVariationSettings: "'opsz' 14",
+              fontSize: '.82rem', fontStyle: 'italic',
+              color: isRead ? '#bbb' : '#444', lineHeight: 1.65, margin: 0,
+            }}>
+              {post.why}
+            </p>
+          </div>
+        )}
 
         {/* Actions */}
         {!readOnly && (
-          <div style={{ display: 'flex', gap: '.4rem', flexWrap: 'wrap' }}>
-            <button onClick={() => sendSignal('read')} disabled={loading} style={{
-              fontFamily: 'var(--font-body)', fontSize: '.7rem', fontWeight: 700,
-              letterSpacing: '.08em', textTransform: 'uppercase',
-              padding: '6px 14px', borderRadius: 5,
-              border: `1.5px solid ${isRead ? '#555' : '#ddd'}`,
-              color: isRead ? '#fff' : '#888',
-              background: isRead ? '#555' : 'transparent',
-              cursor: loading ? 'not-allowed' : 'pointer', transition: 'all .15s',
-            }}>
-              {isRead ? '\u2713 Read' : 'Mark read'}
+          <div style={{ display: 'flex', gap: '.4rem', alignItems: 'center', flexWrap: 'wrap' }}>
+            <button
+              onClick={() => sendSignal('read')}
+              disabled={loading}
+              style={{
+                fontFamily: 'var(--font-body)', fontSize: '.68rem', fontWeight: 700,
+                letterSpacing: '.08em', textTransform: 'uppercase',
+                padding: '5px 13px', borderRadius: 20,
+                border: `1.5px solid ${isRead ? '#555' : '#DDD'}`,
+                color: isRead ? '#fff' : '#888',
+                background: isRead ? '#555' : 'transparent',
+                cursor: loading ? 'not-allowed' : 'pointer',
+                transition: 'all .15s', flexShrink: 0,
+              }}
+            >
+              {isRead ? '✓ Read' : 'Mark read'}
             </button>
 
-            <button onClick={() => sendSignal('up')} disabled={loading} title="Worth it" style={{
-              fontFamily: 'var(--font-body)', fontSize: '.82rem', padding: '6px 13px', borderRadius: 5,
-              border: `1.5px solid ${signals.up ? t.color : '#ddd'}`,
-              color: signals.up ? t.color : '#bbb',
-              background: signals.up ? t.light : 'transparent',
-              fontWeight: signals.up ? 700 : 400,
-              cursor: loading ? 'not-allowed' : 'pointer', transition: 'all .15s',
-            }}>\u25b2</button>
+            <button
+              onClick={() => sendSignal('up')}
+              disabled={loading}
+              title="Worth it"
+              style={{
+                padding: '5px 12px', borderRadius: 20,
+                border: `1.5px solid ${signals.up ? s.accent : '#DDD'}`,
+                color: signals.up ? s.accent : '#bbb',
+                background: signals.up ? s.accentBg : 'transparent',
+                fontWeight: signals.up ? 700 : 400,
+                fontSize: '.82rem',
+                cursor: loading ? 'not-allowed' : 'pointer',
+                transition: 'all .15s',
+              }}
+            >
+              ▲
+            </button>
 
-            <button onClick={() => sendSignal('down')} disabled={loading} title="Not for me" style={{
-              fontFamily: 'var(--font-body)', fontSize: '.82rem', padding: '6px 13px', borderRadius: 5,
-              border: '1.5px solid #ddd', color: '#bbb',
-              background: signals.down ? '#f5f4f2' : 'transparent',
-              opacity: signals.down ? 1 : .5,
-              cursor: loading ? 'not-allowed' : 'pointer', transition: 'all .15s',
-            }}>\u25bc</button>
+            <button
+              onClick={() => sendSignal('down')}
+              disabled={loading}
+              title="Not for me"
+              style={{
+                padding: '5px 12px', borderRadius: 20,
+                border: '1.5px solid #DDD', color: '#bbb',
+                background: signals.down ? '#F4F3F0' : 'transparent',
+                opacity: signals.down ? 1 : .5,
+                fontSize: '.82rem',
+                cursor: loading ? 'not-allowed' : 'pointer',
+                transition: 'all .15s',
+              }}
+            >
+              ▼
+            </button>
+
+            <a
+              href={post.url} target="_blank" rel="noopener noreferrer"
+              onClick={() => !isRead && sendSignal('read')}
+              style={{
+                marginLeft: 'auto',
+                fontFamily: 'var(--font-body)', fontSize: '.72rem', fontWeight: 700,
+                color: hovered ? s.accent : '#aaa',
+                textDecoration: 'none', letterSpacing: '.02em',
+                transition: 'color .15s',
+                flexShrink: 0,
+              }}
+            >
+              Read on Substack →
+            </a>
           </div>
         )}
 
         {readOnly && (signals.read || signals.up || signals.down) && (
           <div style={{ display: 'flex', gap: '.5rem' }}>
-            {signals.read && <span style={{ fontFamily: 'var(--font-body)', fontSize: '.6rem', color: '#999', letterSpacing: '.1em', textTransform: 'uppercase' }}>Read \u2713</span>}
-            {signals.up   && <span style={{ fontFamily: 'var(--font-body)', fontSize: '.6rem', color: t.color, letterSpacing: '.1em', textTransform: 'uppercase' }}>\u25b2 Liked</span>}
-            {signals.down && <span style={{ fontFamily: 'var(--font-body)', fontSize: '.6rem', color: '#bbb', letterSpacing: '.1em', textTransform: 'uppercase' }}>\u25bc Skipped</span>}
+            {signals.read && <span style={{ fontFamily: 'var(--font-body)', fontSize: '.6rem', color: '#999', letterSpacing: '.1em', textTransform: 'uppercase' }}>Read ✓</span>}
+            {signals.up   && <span style={{ fontFamily: 'var(--font-body)', fontSize: '.6rem', color: s.accent, letterSpacing: '.1em', textTransform: 'uppercase' }}>▲ Liked</span>}
+            {signals.down && <span style={{ fontFamily: 'var(--font-body)', fontSize: '.6rem', color: '#bbb', letterSpacing: '.1em', textTransform: 'uppercase' }}>▼ Skipped</span>}
           </div>
         )}
       </div>

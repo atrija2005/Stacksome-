@@ -181,11 +181,16 @@ body {
 .post-card {
   background:#fff;
   transition:transform .2s ease, box-shadow .25s ease, border-color .15s ease;
-  border-radius:10px;
+  border-radius:14px;
 }
 .post-card:hover {
-  transform:translateY(-5px);
-  box-shadow:0 16px 48px rgba(0,0,0,.09), 0 4px 16px rgba(0,0,0,.05);
+  transform:translateY(-3px);
+  box-shadow:0 12px 40px rgba(0,0,0,.09), 0 2px 8px rgba(0,0,0,.04);
+}
+
+/* ── Reading list page background ───────────── */
+.reading-page-bg {
+  background: #F8F6F2;
 }
 
 /* ── Spinner ─────────────────────────────────── */
