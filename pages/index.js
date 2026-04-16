@@ -106,14 +106,20 @@ export default function Home() {
   const [interestInput, setInterestInput] = useState('');
   const [buildingFirst, setBuildingFirst] = useState(false);
   const [buildPhase,    setBuildPhase]    = useState('');
-  // ?start=1 forces the input form (e.g. from "Get Started" on landing page)
-  const forceStart = router.query.start === '1';
+  // ?start=1 forces the input form; ?interests=... pre-fills it from landing page
+  const forceStart         = router.query.start === '1';
+  const queryInterests     = router.query.interests ? decodeURIComponent(router.query.interests) : '';
   const autoFetchedRef = useRef(false);
 
   useEffect(() => {
     if (authLoading) return;
     if (!user) { setHasProfile(false); setLoading(false); return; }
     loadList();
+    // If landing page passed interests via query param, pre-fill + auto-start
+    if (queryInterests) {
+      setInterestInput(queryInterests);
+      setHasProfile(true);
+    }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, authLoading]);
 

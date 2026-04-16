@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Head from 'next/head';
 import { useRouter } from 'next/router';
 import { useAuth } from './AuthProvider';
@@ -154,10 +154,16 @@ const FAQ_ITEMS = [
 /* ── Component ───────────────────────────────────────────────────────────── */
 export default function LandingPage() {
   const { signInWithGoogle, configured } = useAuth();
-  const [signingIn, setSigningIn] = useState(false);
-  const [year, setYear] = useState(2025);
-  const [openFaq, setOpenFaq] = useState(null);
-  const [mobileMenu, setMobileMenu] = useState(false);
+  const [signingIn,    setSigningIn]    = useState(false);
+  const [year,         setYear]         = useState(2025);
+  const [openFaq,      setOpenFaq]      = useState(null);
+  const [mobileMenu,   setMobileMenu]   = useState(false);
+  // Hero inline onboarding
+  const [heroInput,    setHeroInput]    = useState('');
+  const [heroMode,     setHeroMode]     = useState('idle'); // idle | email | sending | sent | loading
+  const [heroEmail,    setHeroEmail]    = useState('');
+  const [heroError,    setHeroError]    = useState('');
+  const heroTextareaRef = useRef(null);
   const router = useRouter();
 
   useEffect(() => {
@@ -185,6 +191,33 @@ export default function LandingPage() {
       catch { router.push('/?start=1'); setSigningIn(false); }
     } else {
       router.push('/?start=1');
+    }
+  }
+
+  // Read in app — store interests in sessionStorage then go to app
+  function handleReadInApp() {
+    if (!heroInput.trim()) return;
+    sessionStorage.setItem('ss_pending_interests', heroInput.trim());
+    router.push('/?start=1&interests=' + encodeURIComponent(heroInput.trim()));
+  }
+
+  // Email flow
+  async function handleSendEmail() {
+    if (!heroInput.trim() || !heroEmail.trim()) return;
+    setHeroError('');
+    setHeroMode('sending');
+    try {
+      const res = await fetch('/api/subscribe', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: heroEmail.trim(), interests: heroInput.trim() }),
+      });
+      const d = await res.json();
+      if (!res.ok || d.error) { setHeroError(d.error || 'Something went wrong.'); setHeroMode('email'); return; }
+      setHeroMode('sent');
+    } catch {
+      setHeroError('Network error — please try again.');
+      setHeroMode('email');
     }
   }
 
@@ -434,29 +467,147 @@ export default function LandingPage() {
                 never heard of, plus the best from ones you already follow.
               </p>
 
-              {/* CTA */}
-              <div className="anim-fade-in-up" style={{ animationDelay: '1100ms' }}>
-                <button
-                  onClick={handleSignIn}
-                  disabled={signingIn}
-                  className="btn-glow"
-                  style={{
-                    display: 'inline-flex', alignItems: 'center', gap: '.7rem',
-                    background: '#FF6719', color: '#fff',
-                    padding: '16px 36px', borderRadius: 10,
-                    fontSize: '1rem', fontWeight: 700,
-                    fontFamily: 'var(--font-body)',
-                    border: 'none',
-                    cursor: signingIn ? 'wait' : 'pointer',
-                    letterSpacing: '.01em',
-                  }}
-                >
-                  <GoogleIcon size={20} />
-                  {signingIn ? 'Signing in\u2026' : 'Start reading for free'}
-                </button>
-                <p style={{ fontFamily: 'var(--font-body)', fontSize: '.75rem', color: 'rgba(255,255,255,.3)', marginTop: '.9rem' }}>
-                  No credit card \u00b7 No spam \u00b7 Takes 60 seconds to set up
-                </p>
+              {/* ── Hero inline onboarding ─────────────────────────────── */}
+              <div className="anim-fade-in-up" style={{ animationDelay: '1100ms', maxWidth: 620, margin: '0 auto' }}>
+
+                {/* Sent confirmation */}
+                {heroMode === 'sent' ? (
+                  <div style={{
+                    background: 'rgba(255,103,25,.12)', border: '1px solid rgba(255,103,25,.3)',
+                    borderRadius: 14, padding: '2rem',
+                  }}>
+                    <div style={{ fontSize: '2rem', marginBottom: '.5rem' }}>✉️</div>
+                    <p style={{ fontFamily: 'var(--font-body)', fontSize: '1rem', fontWeight: 700, color: '#fff', margin: '0 0 .4rem' }}>
+                      Check your inbox!
+                    </p>
+                    <p style={{ fontFamily: 'var(--font-body)', fontSize: '.85rem', color: 'rgba(255,255,255,.5)', margin: 0 }}>
+                      Your curated Substack reads are on their way to {heroEmail}.
+                    </p>
+                  </div>
+                ) : (
+                  <>
+                    {/* Textarea */}
+                    <div style={{ position: 'relative', marginBottom: '1rem' }}>
+                      <textarea
+                        ref={heroTextareaRef}
+                        value={heroInput}
+                        onChange={e => setHeroInput(e.target.value)}
+                        onKeyDown={e => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey) && heroInput.trim()) handleReadInApp(); }}
+                        rows={3}
+                        placeholder="What do you want to read about? Try &quot;AI and startups&quot;, &quot;education and child development&quot;, &quot;climate and energy&quot;…"
+                        style={{
+                          width: '100%', boxSizing: 'border-box',
+                          fontFamily: 'var(--font-body)', fontSize: '1rem',
+                          padding: '18px 20px',
+                          background: 'rgba(255,255,255,.07)',
+                          border: `1.5px solid ${heroInput.trim() ? 'rgba(255,103,25,.6)' : 'rgba(255,255,255,.12)'}`,
+                          borderRadius: 12, outline: 'none',
+                          color: '#fff', lineHeight: 1.6, resize: 'none',
+                          transition: 'border-color .2s',
+                        }}
+                      />
+                    </div>
+
+                    {/* Email input — shown when email mode */}
+                    {heroMode === 'email' && (
+                      <div style={{ marginBottom: '1rem' }}>
+                        <input
+                          type="email"
+                          value={heroEmail}
+                          onChange={e => setHeroEmail(e.target.value)}
+                          onKeyDown={e => { if (e.key === 'Enter' && heroEmail.trim()) handleSendEmail(); }}
+                          placeholder="your@email.com"
+                          autoFocus
+                          style={{
+                            width: '100%', boxSizing: 'border-box',
+                            fontFamily: 'var(--font-body)', fontSize: '.95rem',
+                            padding: '14px 18px',
+                            background: 'rgba(255,255,255,.07)',
+                            border: '1.5px solid rgba(255,103,25,.5)',
+                            borderRadius: 10, outline: 'none',
+                            color: '#fff',
+                          }}
+                        />
+                        {heroError && (
+                          <p style={{ fontFamily: 'var(--font-body)', fontSize: '.78rem', color: '#ff6b6b', margin: '.5rem 0 0' }}>
+                            {heroError}
+                          </p>
+                        )}
+                      </div>
+                    )}
+
+                    {/* CTA buttons */}
+                    <div style={{ display: 'flex', gap: '.75rem', flexWrap: 'wrap' }}>
+                      {heroMode === 'email' ? (
+                        <>
+                          <button
+                            onClick={handleSendEmail}
+                            disabled={!heroInput.trim() || !heroEmail.trim() || heroMode === 'sending'}
+                            style={{
+                              flex: 1, padding: '14px 20px', borderRadius: 10,
+                              background: heroInput.trim() && heroEmail.trim() ? '#FF6719' : 'rgba(255,255,255,.1)',
+                              color: '#fff', fontFamily: 'var(--font-body)', fontSize: '.95rem', fontWeight: 700,
+                              border: 'none', cursor: 'pointer', transition: 'all .2s',
+                              boxShadow: heroInput.trim() && heroEmail.trim() ? '0 4px 24px rgba(255,103,25,.4)' : 'none',
+                            }}
+                          >
+                            {heroMode === 'sending' ? 'Sending…' : '✉ Send my reads →'}
+                          </button>
+                          <button
+                            onClick={() => setHeroMode('idle')}
+                            style={{
+                              padding: '14px 18px', borderRadius: 10,
+                              background: 'transparent', color: 'rgba(255,255,255,.4)',
+                              fontFamily: 'var(--font-body)', fontSize: '.85rem',
+                              border: '1px solid rgba(255,255,255,.12)', cursor: 'pointer',
+                            }}
+                          >
+                            ← Back
+                          </button>
+                        </>
+                      ) : (
+                        <>
+                          <button
+                            onClick={handleReadInApp}
+                            disabled={!heroInput.trim()}
+                            className={heroInput.trim() ? 'btn-glow' : ''}
+                            style={{
+                              flex: 1, padding: '15px 20px', borderRadius: 10,
+                              background: heroInput.trim() ? '#FF6719' : 'rgba(255,255,255,.08)',
+                              color: '#fff', fontFamily: 'var(--font-body)', fontSize: '.95rem', fontWeight: 700,
+                              border: 'none', cursor: heroInput.trim() ? 'pointer' : 'not-allowed',
+                              transition: 'all .2s',
+                              boxShadow: heroInput.trim() ? '0 4px 24px rgba(255,103,25,.4)' : 'none',
+                            }}
+                          >
+                            ✦ Read in app →
+                          </button>
+                          <button
+                            onClick={() => { if (heroInput.trim()) setHeroMode('email'); }}
+                            disabled={!heroInput.trim()}
+                            style={{
+                              flex: 1, padding: '15px 20px', borderRadius: 10,
+                              background: 'rgba(255,255,255,.06)',
+                              border: `1px solid ${heroInput.trim() ? 'rgba(255,255,255,.2)' : 'rgba(255,255,255,.08)'}`,
+                              color: heroInput.trim() ? 'rgba(255,255,255,.8)' : 'rgba(255,255,255,.25)',
+                              fontFamily: 'var(--font-body)', fontSize: '.95rem', fontWeight: 600,
+                              cursor: heroInput.trim() ? 'pointer' : 'not-allowed',
+                              transition: 'all .2s',
+                            }}
+                            onMouseEnter={e => { if (heroInput.trim()) e.currentTarget.style.background = 'rgba(255,255,255,.1)'; }}
+                            onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,.06)'; }}
+                          >
+                            ✉ Email me weekly
+                          </button>
+                        </>
+                      )}
+                    </div>
+
+                    <p style={{ fontFamily: 'var(--font-body)', fontSize: '.72rem', color: 'rgba(255,255,255,.25)', marginTop: '.85rem' }}>
+                      Free · No account needed · Searches 100+ Substack publications
+                    </p>
+                  </>
+                )}
               </div>
 
               {/* Stats */}
