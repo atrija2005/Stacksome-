@@ -22,7 +22,7 @@ function formatDate(iso) {
   } catch { return ''; }
 }
 
-export default function PostCard({ post, index, weekLabel, initialSignals = {}, readOnly = false, animDelay = 0 }) {
+export default function PostCard({ post, index, weekLabel, initialSignals = {}, readOnly = false, animDelay = 0, onSignal }) {
   const toast   = useToast();
   const [signals, setSignals] = useState(initialSignals[post.url] || {});
   const [loading, setLoading] = useState(false);
@@ -48,6 +48,7 @@ export default function PostCard({ post, index, weekLabel, initialSignals = {}, 
         const n = { ...prev };
         if (sig === 'up' || sig === 'down') { delete n.up; delete n.down; }
         n[sig] = true;
+        if (onSignal) onSignal(post.url, n);
         return n;
       });
       if (sig === 'up' && data.upCount && REFINE_MILESTONES.has(data.upCount)) {

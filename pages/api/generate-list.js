@@ -3,7 +3,7 @@ import { getProfile, saveWeeklyList, getAllSignals } from '../../lib/db';
 import { rankPosts, localRankFallback } from '../../lib/claude';
 import { discoverPosts } from '../../lib/substack-discover';
 
-const TARGET = 20; // number of posts to return
+const TARGET = 5; // focused curriculum — 5 hyper-relevant posts
 
 function getWeekLabel() {
   const now   = new Date();
@@ -59,7 +59,7 @@ export default withAuth(async (req, res, user, supabase) => {
   // Rank — Claude first, then local fallback, then raw score sort
   let ranked = [];
   try {
-    ranked = await rankPosts(pool, profileText, likedUrls, skippedUrls, [], { count: TARGET, section: 'discover' });
+    ranked = await rankPosts(pool, profileText, likedUrls, skippedUrls, [], { count: TARGET });
   } catch (err) {
     console.warn('[generate-list] Claude ranking failed:', err.message);
     try {
