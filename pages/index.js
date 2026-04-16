@@ -16,6 +16,63 @@ const C = {
 };
 const AUTO_FETCH_H = 12;
 
+/* ── Topic chips ─────────────────────────────────────────────────────────── */
+const TOPICS = [
+  'AI', 'Startups', 'Technology', 'Product', 'Design',
+  'Investing', 'Markets', 'FinTech', 'Economics', 'Crypto',
+  'Philosophy', 'Science', 'History', 'Psychology', 'Politics',
+  'Writing', 'Books', 'Culture',
+  'Health', 'Longevity', 'Mental Health',
+  'Geopolitics', 'Climate', 'Energy',
+  'Business', 'Leadership', 'Marketing', 'Venture Capital',
+  'Education', 'Productivity', 'Parenting',
+];
+
+function topicsFromInput(input) {
+  return input.split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
+}
+
+function toggleTopic(current, chip) {
+  const parts = current.split(',').map(s => s.trim()).filter(Boolean);
+  const idx = parts.findIndex(p => p.toLowerCase() === chip.toLowerCase());
+  if (idx >= 0) parts.splice(idx, 1); else parts.push(chip);
+  return parts.join(', ');
+}
+
+function ChipPicker({ value, onChange }) {
+  const selected = topicsFromInput(value);
+  return (
+    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '.4rem' }}>
+      {TOPICS.map(t => {
+        const on = selected.includes(t.toLowerCase());
+        return (
+          <button
+            key={t}
+            type="button"
+            onClick={() => onChange(toggleTopic(value, t))}
+            style={{
+              fontFamily: 'var(--font-body)',
+              fontSize: '.72rem',
+              fontWeight: on ? 700 : 500,
+              padding: '6px 13px',
+              borderRadius: 99,
+              border: `1.5px solid ${on ? C.orange : '#E0DDD8'}`,
+              background: on ? C.orange : 'transparent',
+              color: on ? '#fff' : '#777',
+              cursor: 'pointer',
+              transition: 'all .14s',
+              whiteSpace: 'nowrap',
+              lineHeight: 1,
+            }}
+          >
+            {t}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
 /* ── Skeleton loader ─────────────────────────────────────────────────────── */
 function Skeleton() {
   return (
@@ -516,6 +573,27 @@ export default function Home() {
                   </p>
                 </div>
 
+                {/* Topic chips */}
+                <div style={{ marginBottom: '1rem' }}>
+                  <p style={{
+                    fontFamily: 'var(--font-body)', fontSize: '.63rem', fontWeight: 700,
+                    letterSpacing: '.12em', textTransform: 'uppercase',
+                    color: '#bbb', marginBottom: '.6rem',
+                  }}>
+                    Tap your topics
+                  </p>
+                  <ChipPicker value={interestInput} onChange={setInterestInput} />
+                </div>
+
+                {/* Divider */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '.75rem', margin: '1rem 0' }}>
+                  <div style={{ flex: 1, height: 1, background: '#e5e5e5' }} />
+                  <span style={{ fontFamily: 'var(--font-body)', fontSize: '.65rem', color: '#ccc', letterSpacing: '.08em' }}>
+                    or describe in your own words
+                  </span>
+                  <div style={{ flex: 1, height: 1, background: '#e5e5e5' }} />
+                </div>
+
                 <textarea
                   value={interestInput}
                   onChange={e => setInterestInput(e.target.value)}
@@ -524,20 +602,15 @@ export default function Home() {
                       handleBuildFirst();
                     }
                   }}
-                  rows={4}
-                  placeholder={
-                    "Examples:\n" +
-                    "\"AI, startups, manufacturing, geopolitics\"\n" +
-                    "\"I'm building a fintech startup and want to stay sharp on markets\"\n" +
-                    "\"Philosophy, economics, long-form essays that make me think\""
-                  }
+                  rows={2}
+                  placeholder="e.g. &quot;I'm building a fintech startup&quot;, &quot;Philosophy and long-form essays&quot;…"
                   style={{
                     width: '100%', boxSizing: 'border-box',
                     fontFamily: 'var(--font-body)', fontSize: '.95rem',
-                    padding: '16px 18px',
-                    border: `2px solid ${interestInput.trim() ? C.orange : '#e5e5e5'}`,
-                    borderRadius: 12, outline: 'none', color: '#0a0a0a',
-                    lineHeight: 1.7, resize: 'none', background: '#fafaf8',
+                    padding: '14px 16px',
+                    border: `1.5px solid ${interestInput.trim() ? C.orange : '#e5e5e5'}`,
+                    borderRadius: 10, outline: 'none', color: '#0a0a0a',
+                    lineHeight: 1.6, resize: 'none', background: '#fafaf8',
                     transition: 'border-color .2s',
                     marginBottom: '1rem',
                   }}

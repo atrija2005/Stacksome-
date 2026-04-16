@@ -74,6 +74,63 @@ function MockCard({ type, title, pub, why, delay }) {
   );
 }
 
+/* ── Topics ──────────────────────────────────────────────────────────────── */
+const TOPICS = [
+  'AI', 'Startups', 'Technology', 'Product', 'Design',
+  'Investing', 'Markets', 'FinTech', 'Economics', 'Crypto',
+  'Philosophy', 'Science', 'History', 'Psychology', 'Politics',
+  'Writing', 'Books', 'Culture',
+  'Health', 'Longevity', 'Mental Health',
+  'Geopolitics', 'Climate', 'Energy',
+  'Business', 'Leadership', 'Marketing', 'Venture Capital',
+  'Education', 'Productivity', 'Parenting',
+];
+
+function topicsFromInput(input) {
+  return input.split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
+}
+
+function toggleTopic(current, chip) {
+  const parts = current.split(',').map(s => s.trim()).filter(Boolean);
+  const idx = parts.findIndex(p => p.toLowerCase() === chip.toLowerCase());
+  if (idx >= 0) parts.splice(idx, 1); else parts.push(chip);
+  return parts.join(', ');
+}
+
+function ChipPicker({ value, onChange, dark = false }) {
+  const selected = topicsFromInput(value);
+  return (
+    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '.4rem' }}>
+      {TOPICS.map(t => {
+        const on = selected.includes(t.toLowerCase());
+        return (
+          <button
+            key={t}
+            type="button"
+            onClick={() => onChange(toggleTopic(value, t))}
+            style={{
+              fontFamily: 'var(--font-body)',
+              fontSize: '.72rem',
+              fontWeight: on ? 700 : 500,
+              padding: '6px 13px',
+              borderRadius: 99,
+              border: `1.5px solid ${on ? '#FF6719' : dark ? 'rgba(255,255,255,.15)' : '#E0DDD8'}`,
+              background: on ? '#FF6719' : dark ? 'rgba(255,255,255,.06)' : 'transparent',
+              color: on ? '#fff' : dark ? 'rgba(255,255,255,.55)' : '#666',
+              cursor: 'pointer',
+              transition: 'all .14s',
+              whiteSpace: 'nowrap',
+              lineHeight: 1,
+            }}
+          >
+            {t}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
 /* ── Data ────────────────────────────────────────────────────────────────── */
 const MOCK_CARDS = [
   {
@@ -468,13 +525,13 @@ export default function LandingPage() {
               </p>
 
               {/* ── Hero inline onboarding ─────────────────────────────── */}
-              <div className="anim-fade-in-up" style={{ animationDelay: '1100ms', maxWidth: 620, margin: '0 auto' }}>
+              <div className="anim-fade-in-up" style={{ animationDelay: '1100ms', maxWidth: 640, margin: '0 auto', textAlign: 'left' }}>
 
                 {/* Sent confirmation */}
                 {heroMode === 'sent' ? (
                   <div style={{
                     background: 'rgba(255,103,25,.12)', border: '1px solid rgba(255,103,25,.3)',
-                    borderRadius: 14, padding: '2rem',
+                    borderRadius: 14, padding: '2rem', textAlign: 'center',
                   }}>
                     <div style={{ fontSize: '2rem', marginBottom: '.5rem' }}>✉️</div>
                     <p style={{ fontFamily: 'var(--font-body)', fontSize: '1rem', fontWeight: 700, color: '#fff', margin: '0 0 .4rem' }}>
@@ -486,6 +543,27 @@ export default function LandingPage() {
                   </div>
                 ) : (
                   <>
+                    {/* Chip picker — tap to select topics instantly */}
+                    <div style={{ marginBottom: '.85rem' }}>
+                      <p style={{
+                        fontFamily: 'var(--font-body)', fontSize: '.65rem', fontWeight: 700,
+                        letterSpacing: '.12em', textTransform: 'uppercase',
+                        color: 'rgba(255,255,255,.3)', marginBottom: '.6rem',
+                      }}>
+                        Pick your topics
+                      </p>
+                      <ChipPicker value={heroInput} onChange={setHeroInput} dark />
+                    </div>
+
+                    {/* Divider */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '.75rem', margin: '.85rem 0' }}>
+                      <div style={{ flex: 1, height: 1, background: 'rgba(255,255,255,.08)' }} />
+                      <span style={{ fontFamily: 'var(--font-body)', fontSize: '.65rem', color: 'rgba(255,255,255,.25)', letterSpacing: '.08em' }}>
+                        or type your own
+                      </span>
+                      <div style={{ flex: 1, height: 1, background: 'rgba(255,255,255,.08)' }} />
+                    </div>
+
                     {/* Textarea */}
                     <div style={{ position: 'relative', marginBottom: '1rem' }}>
                       <textarea
@@ -493,15 +571,15 @@ export default function LandingPage() {
                         value={heroInput}
                         onChange={e => setHeroInput(e.target.value)}
                         onKeyDown={e => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey) && heroInput.trim()) handleReadInApp(); }}
-                        rows={3}
-                        placeholder="What do you want to read about? Try &quot;AI and startups&quot;, &quot;education and child development&quot;, &quot;climate and energy&quot;…"
+                        rows={2}
+                        placeholder="e.g. &quot;AI and startups&quot;, &quot;education and child development&quot;, &quot;climate and energy&quot;…"
                         style={{
                           width: '100%', boxSizing: 'border-box',
-                          fontFamily: 'var(--font-body)', fontSize: '1rem',
-                          padding: '18px 20px',
+                          fontFamily: 'var(--font-body)', fontSize: '.95rem',
+                          padding: '14px 18px',
                           background: 'rgba(255,255,255,.07)',
-                          border: `1.5px solid ${heroInput.trim() ? 'rgba(255,103,25,.6)' : 'rgba(255,255,255,.12)'}`,
-                          borderRadius: 12, outline: 'none',
+                          border: `1.5px solid ${heroInput.trim() ? 'rgba(255,103,25,.6)' : 'rgba(255,255,255,.1)'}`,
+                          borderRadius: 10, outline: 'none',
                           color: '#fff', lineHeight: 1.6, resize: 'none',
                           transition: 'border-color .2s',
                         }}
@@ -586,13 +664,13 @@ export default function LandingPage() {
                             onClick={() => { if (heroInput.trim()) setHeroMode('email'); }}
                             disabled={!heroInput.trim()}
                             style={{
-                              flex: 1, padding: '15px 20px', borderRadius: 10,
+                              padding: '15px 20px', borderRadius: 10,
                               background: 'rgba(255,255,255,.06)',
                               border: `1px solid ${heroInput.trim() ? 'rgba(255,255,255,.2)' : 'rgba(255,255,255,.08)'}`,
                               color: heroInput.trim() ? 'rgba(255,255,255,.8)' : 'rgba(255,255,255,.25)',
                               fontFamily: 'var(--font-body)', fontSize: '.95rem', fontWeight: 600,
                               cursor: heroInput.trim() ? 'pointer' : 'not-allowed',
-                              transition: 'all .2s',
+                              transition: 'all .2s', whiteSpace: 'nowrap',
                             }}
                             onMouseEnter={e => { if (heroInput.trim()) e.currentTarget.style.background = 'rgba(255,255,255,.1)'; }}
                             onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,.06)'; }}
@@ -603,7 +681,7 @@ export default function LandingPage() {
                       )}
                     </div>
 
-                    <p style={{ fontFamily: 'var(--font-body)', fontSize: '.72rem', color: 'rgba(255,255,255,.25)', marginTop: '.85rem' }}>
+                    <p style={{ fontFamily: 'var(--font-body)', fontSize: '.68rem', color: 'rgba(255,255,255,.2)', marginTop: '.85rem', textAlign: 'center' }}>
                       Free · No account needed · Searches 100+ Substack publications
                     </p>
                   </>
