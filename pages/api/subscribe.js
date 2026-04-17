@@ -150,7 +150,7 @@ export default async function handler(req, res) {
   // Send email
   try {
     await resend.emails.send({
-      from:    'Stacksome <reads@stacksome.app>',
+      from:    'Stacksome <onboarding@resend.dev>',
       to:      email,
       subject: `Your Stacksome reads — ${getWeekLabel()}`,
       html:    buildEmailHtml(posts, interests),
