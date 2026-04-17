@@ -291,6 +291,13 @@ export default function Home() {
   const [showNewForm,   setShowNewForm]   = useState(false);
   const [diveMode,      setDiveMode]      = useState('quick'); // 'quick' | 'deep'
 
+  // ── Goal confirmation ─────────────────────────────────────────────────
+  const [confirmData,  setConfirmData]  = useState(null);  // { refinedGoal, summary, bullets, queries }
+  const [confirming,   setConfirming]   = useState(false);
+
+  // ── Curriculum completion ─────────────────────────────────────────────
+  const [ctxRatings, setCtxRatings] = useState({});  // { [ctxId]: 'perfect' | 'mostly' | 'miss' }
+
   // ── Generation state ──────────────────────────────────────────────────
   const [generating,  setGenning]    = useState(false);
   const [genPhase,    setGenPhase]   = useState('idle');
@@ -386,11 +393,41 @@ export default function Home() {
 
   const readCnt = Object.values(ctxSignals).filter(s => s.read).length;
   const readPct = allPosts.length ? Math.round((readCnt / allPosts.length) * 100) : 0;
+  const allRead = allPosts.length > 0 && allPosts.every(p => ctxSignals[p.url]?.read);
 
   // ── Build / generate helpers ──────────────────────────────────────────
-  async function handleBuildFirst() {
+
+  // Step 1 of 2: Expand the goal → show confirmation card
+  async function handleGoalSubmit() {
     const interests = interestInput.trim();
+    if (!interests || confirming) return;
+    setConfirming(true);
+    try {
+      const res  = await fetch('/api/expand-goal', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ goal: interests, mode: diveMode }),
+      });
+      const data = await res.json();
+      setConfirmData({
+        originalGoal: interests,
+        refinedGoal:  data.refinedGoal || interests,
+        summary:      data.summary     || '',
+        bullets:      data.bullets     || [],
+        queries:      data.queries     || [],
+      });
+    } catch {
+      // If expand-goal fails, skip confirmation and build directly
+      await handleBuildFirst(interests);
+    } finally {
+      setConfirming(false);
+    }
+  }
+
+  // Step 2 of 2: Build the curriculum using confirmed goal
+  async function handleBuildFirst(goalOverride) {
+    const interests = goalOverride || confirmData?.refinedGoal || interestInput.trim();
     if (!interests || buildingFirst) return;
+    setConfirmData(null);
     setBuildingFirst(true);
     setBuildPhase('Saving your interests…');
     await fetch('/api/profile', {
@@ -398,7 +435,7 @@ export default function Home() {
       body: JSON.stringify({ interests }),
     }).catch(() => {});
 
-    setBuildPhase('Scanning Substack for the best posts…');
+    setBuildPhase('Searching Substack for the right posts…');
     await new Promise(r => setTimeout(r, 300));
     setBuildPhase('Claude is building your curriculum…');
 
@@ -518,8 +555,83 @@ export default function Home() {
               </div>
             )}
 
+            {/* ── Goal confirmation card ─────────────────────────────── */}
+            {!buildingFirst && confirmData && (
+              <div className="anim-fade-in-up" style={{
+                background: '#fff', border: '1.5px solid #ECEAE6',
+                borderRadius: 14, padding: '1.5rem 1.6rem',
+                boxShadow: '0 4px 24px rgba(0,0,0,.07)',
+                marginBottom: '1rem',
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '.5rem', marginBottom: '1rem' }}>
+                  <div style={{
+                    width: 28, height: 28, borderRadius: 8,
+                    background: C.orange,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    fontSize: '.75rem', fontWeight: 900, color: '#fff', flexShrink: 0,
+                  }}>✦</div>
+                  <p style={{
+                    fontFamily: 'var(--font-body)', fontSize: '.65rem', fontWeight: 800,
+                    letterSpacing: '.12em', textTransform: 'uppercase', color: C.orange, margin: 0,
+                  }}>Here's what I'll build</p>
+                </div>
+
+                {confirmData.summary && (
+                  <p style={{
+                    fontFamily: 'var(--font-display)', fontVariationSettings: "'opsz' 18",
+                    fontSize: '1.05rem', fontWeight: 700, color: '#0a0a0a',
+                    lineHeight: 1.4, marginBottom: '.9rem',
+                  }}>
+                    {confirmData.summary}
+                  </p>
+                )}
+
+                {confirmData.bullets.length > 0 && (
+                  <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 1.25rem', display: 'flex', flexDirection: 'column', gap: '.4rem' }}>
+                    {confirmData.bullets.map((b, i) => (
+                      <li key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: '.5rem' }}>
+                        <span style={{
+                          fontFamily: 'var(--font-mono)', fontSize: '.6rem', fontWeight: 700,
+                          color: C.orange, marginTop: '3px', flexShrink: 0,
+                        }}>{String(i + 1).padStart(2, '0')}</span>
+                        <span style={{ fontFamily: 'var(--font-body)', fontSize: '.82rem', color: '#555', lineHeight: 1.5 }}>
+                          {b}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+
+                <div style={{ display: 'flex', gap: '.6rem' }}>
+                  <button
+                    onClick={() => handleBuildFirst()}
+                    style={{
+                      flex: 1, padding: '11px', borderRadius: 9,
+                      background: C.orange, color: '#fff',
+                      fontFamily: 'var(--font-body)', fontSize: '.88rem', fontWeight: 700,
+                      border: 'none', cursor: 'pointer',
+                      boxShadow: `0 3px 14px ${C.orange}44`,
+                    }}
+                  >
+                    {diveMode === 'deep' ? '⬛ Build this deep dive' : '✦ Build this curriculum'}
+                  </button>
+                  <button
+                    onClick={() => setConfirmData(null)}
+                    style={{
+                      padding: '11px 18px', borderRadius: 9,
+                      background: 'transparent', color: '#888',
+                      fontFamily: 'var(--font-body)', fontSize: '.85rem', fontWeight: 600,
+                      border: '1.5px solid #E0DDD8', cursor: 'pointer',
+                    }}
+                  >
+                    Edit goal
+                  </button>
+                </div>
+              </div>
+            )}
+
             {/* Interest input */}
-            {!buildingFirst && (
+            {!buildingFirst && !confirmData && (
               <>
                 <div style={{ textAlign: 'center', marginBottom: '1.75rem' }}>
                   {showNewForm && contexts.length > 0 && (
@@ -606,7 +718,7 @@ export default function Home() {
                   value={interestInput}
                   onChange={e => setInterestInput(e.target.value)}
                   onKeyDown={e => {
-                    if (e.key === 'Enter' && (e.metaKey || e.ctrlKey) && interestInput.trim()) handleBuildFirst();
+                    if (e.key === 'Enter' && (e.metaKey || e.ctrlKey) && interestInput.trim()) handleGoalSubmit();
                   }}
                   rows={2}
                   placeholder={diveMode === 'deep'
@@ -625,8 +737,8 @@ export default function Home() {
                 />
 
                 <button
-                  onClick={handleBuildFirst}
-                  disabled={!interestInput.trim()}
+                  onClick={handleGoalSubmit}
+                  disabled={!interestInput.trim() || confirming}
                   style={{
                     width: '100%', padding: '14px',
                     borderRadius: 10,
@@ -634,12 +746,17 @@ export default function Home() {
                     color: interestInput.trim() ? '#fff' : '#aaa',
                     fontFamily: 'var(--font-body)', fontSize: '.95rem', fontWeight: 700,
                     border: 'none',
-                    cursor: interestInput.trim() ? 'pointer' : 'not-allowed',
+                    cursor: interestInput.trim() && !confirming ? 'pointer' : 'not-allowed',
                     boxShadow: interestInput.trim() ? `0 4px 20px ${C.orange}44` : 'none',
                     transition: 'all .2s', marginBottom: '.65rem',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '.5rem',
                   }}
                 >
-                  {diveMode === 'deep' ? '⬛ Build my deep dive' : '✦ Build my curriculum'}
+                  {confirming
+                    ? <><span className="spinner" style={{ borderColor: 'rgba(255,255,255,.3)', borderTopColor: '#fff' }} />
+                        Thinking about your goal…</>
+                    : (diveMode === 'deep' ? '⬛ Plan my deep dive' : '✦ Plan my curriculum')
+                  }
                 </button>
 
                 <p style={{
@@ -804,6 +921,125 @@ export default function Home() {
                 />
               ))}
             </div>
+
+            {/* ── Curriculum completion banner ───────────────────────── */}
+            {allRead && !generating && (() => {
+              const rating = ctxRatings[activeCtxId];
+              const nextGoal = (activeCtx?.name || '') + ' — advanced';
+              return (
+                <div className="anim-fade-in-up" style={{
+                  marginTop: '1.5rem', marginBottom: '1rem',
+                  borderRadius: 14, overflow: 'hidden',
+                  border: '1.5px solid #D1FAE5',
+                }}>
+                  {/* Green header */}
+                  <div style={{
+                    background: 'linear-gradient(135deg, #064E3B 0%, #047857 100%)',
+                    padding: '1.25rem 1.5rem',
+                    display: 'flex', alignItems: 'center', gap: '.75rem',
+                  }}>
+                    <div style={{
+                      width: 36, height: 36, borderRadius: 10,
+                      background: 'rgba(255,255,255,.15)',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      fontSize: '1.1rem', flexShrink: 0,
+                    }}>✓</div>
+                    <div>
+                      <p style={{
+                        fontFamily: 'var(--font-display)', fontVariationSettings: "'opsz' 24",
+                        fontSize: '1.05rem', fontWeight: 900, color: '#fff', margin: 0,
+                      }}>
+                        Curriculum complete.
+                      </p>
+                      <p style={{ fontFamily: 'var(--font-body)', fontSize: '.75rem', color: 'rgba(255,255,255,.6)', margin: '.2rem 0 0' }}>
+                        You read all {allPosts.length} posts.
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Body */}
+                  <div style={{ background: '#F0FDF4', padding: '1.1rem 1.5rem' }}>
+                    {/* Rating */}
+                    {!rating && (
+                      <>
+                        <p style={{
+                          fontFamily: 'var(--font-body)', fontSize: '.72rem', fontWeight: 700,
+                          letterSpacing: '.1em', textTransform: 'uppercase',
+                          color: '#065F46', marginBottom: '.6rem',
+                        }}>
+                          How was the curriculum?
+                        </p>
+                        <div style={{ display: 'flex', gap: '.5rem', flexWrap: 'wrap', marginBottom: '1rem' }}>
+                          {[
+                            { id: 'perfect', label: 'Exactly right', emoji: '🎯' },
+                            { id: 'mostly',  label: 'Mostly right',  emoji: '👍' },
+                            { id: 'miss',    label: 'Missed the mark', emoji: '🤔' },
+                          ].map(opt => (
+                            <button key={opt.id}
+                              onClick={() => setCtxRatings(r => ({ ...r, [activeCtxId]: opt.id }))}
+                              style={{
+                                fontFamily: 'var(--font-body)', fontSize: '.78rem', fontWeight: 600,
+                                padding: '6px 14px', borderRadius: 8,
+                                border: '1.5px solid #BBF7D0',
+                                background: '#fff', color: '#065F46',
+                                cursor: 'pointer', transition: 'all .14s',
+                              }}
+                              onMouseEnter={e => { e.currentTarget.style.background = '#D1FAE5'; }}
+                              onMouseLeave={e => { e.currentTarget.style.background = '#fff'; }}
+                            >
+                              {opt.emoji} {opt.label}
+                            </button>
+                          ))}
+                        </div>
+                      </>
+                    )}
+
+                    {rating && (
+                      <p style={{
+                        fontFamily: 'var(--font-body)', fontSize: '.82rem', color: '#065F46',
+                        marginBottom: '1rem',
+                      }}>
+                        {rating === 'perfect' && '🎯 Great — next time will be even more targeted.'}
+                        {rating === 'mostly'  && '👍 Noted — Claude will dial it in.'}
+                        {rating === 'miss'    && '🤔 Got it — we\'ll adjust the next one.'}
+                      </p>
+                    )}
+
+                    {/* Next level CTA */}
+                    <div style={{
+                      borderTop: '1px solid #BBF7D0', paddingTop: '.9rem',
+                      display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem', flexWrap: 'wrap',
+                    }}>
+                      <div>
+                        <p style={{ fontFamily: 'var(--font-body)', fontSize: '.72rem', fontWeight: 700, color: '#065F46', margin: 0, letterSpacing: '.06em', textTransform: 'uppercase' }}>
+                          Ready to go deeper?
+                        </p>
+                        <p style={{ fontFamily: 'var(--font-body)', fontSize: '.78rem', color: '#6B7280', margin: '.2rem 0 0' }}>
+                          Build the next level on this topic.
+                        </p>
+                      </div>
+                      <button
+                        onClick={() => {
+                          setInterestInput(nextGoal);
+                          setShowNewForm(true);
+                          window.scrollTo({ top: 0, behavior: 'smooth' });
+                        }}
+                        style={{
+                          fontFamily: 'var(--font-body)', fontSize: '.82rem', fontWeight: 700,
+                          padding: '9px 18px', borderRadius: 9,
+                          background: '#047857', color: '#fff',
+                          border: 'none', cursor: 'pointer',
+                          boxShadow: '0 2px 10px rgba(4,120,87,.3)',
+                          whiteSpace: 'nowrap',
+                        }}
+                      >
+                        Build next level →
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
 
             {/* Empty state */}
             {!hasPosts && !generating && (

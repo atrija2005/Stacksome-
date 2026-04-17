@@ -1,7 +1,7 @@
 import { withAuth } from '../../lib/auth';
 import { getProfile, saveWeeklyList, getAllSignals } from '../../lib/db';
-import { rankPosts, localRankFallback } from '../../lib/claude';
-import { discoverPosts } from '../../lib/substack-discover';
+import { rankPosts, localRankFallback, generateSearchQueries } from '../../lib/claude';
+import { discoverPosts, discoverBySearch } from '../../lib/substack-discover';
 
 const TARGET_QUICK = 5; // quick curriculum
 const TARGET_DEEP  = 7; // deep dive — one post per angle
@@ -42,15 +42,47 @@ export default withAuth(async (req, res, user, supabase) => {
     skippedUrls = signals.filter(s => s.signal === 'down').map(s => s.post_url).slice(0, 20);
   } catch { /* non-fatal */ }
 
-  // Discover posts directly from Substack by user interests
+  // ── Step 1: Generate targeted search queries from the goal ───────────────────
+  let refinedGoal = profileText;
+  let searchQueries = [];
+  try {
+    const queryData = await generateSearchQueries(profileText, mode);
+    refinedGoal   = queryData.refinedGoal || profileText;
+    searchQueries = queryData.queries     || [];
+    console.log(`[generate-list] Search queries: ${searchQueries.join(' | ')}`);
+  } catch (err) {
+    console.warn('[generate-list] generateSearchQueries failed:', err.message);
+  }
+
+  // ── Step 2: Search-based discovery (primary path) ─────────────────────────
   let pool = [];
   try {
-    pool = await discoverPosts(profileText, [], TARGET * 6);
-    if (excludeUrls.length) pool = pool.filter(p => !excludeUrls.includes(p.url));
+    if (searchQueries.length > 0) {
+      pool = await discoverBySearch(searchQueries, TARGET * 8);
+    }
   } catch (err) {
-    console.error('[generate-list] Discovery error:', err.message);
-    return res.status(500).json({ error: 'Could not reach Substack right now. Please try again.' });
+    console.warn('[generate-list] discoverBySearch failed:', err.message);
   }
+
+  // ── Step 3: Category-based fallback if search yields < 10 posts ───────────
+  if (pool.length < 10) {
+    console.log(`[generate-list] Search pool thin (${pool.length}) — augmenting with category discovery`);
+    try {
+      const fallback = await discoverPosts(profileText, [], TARGET * 6);
+      // Merge without duplicating URLs
+      const seenUrls = new Set(pool.map(p => p.url));
+      for (const p of fallback) {
+        if (!seenUrls.has(p.url)) { pool.push(p); seenUrls.add(p.url); }
+      }
+    } catch (err) {
+      console.warn('[generate-list] Category discovery fallback failed:', err.message);
+      if (pool.length === 0) {
+        return res.status(500).json({ error: 'Could not reach Substack right now. Please try again.' });
+      }
+    }
+  }
+
+  if (excludeUrls.length) pool = pool.filter(p => !excludeUrls.includes(p.url));
 
   console.log(`[generate-list] Pool: ${pool.length} posts for "${profileText.slice(0, 60)}"`);
 
@@ -61,7 +93,7 @@ export default withAuth(async (req, res, user, supabase) => {
   // Rank — Claude first, then local fallback, then raw score sort
   let ranked = [];
   try {
-    ranked = await rankPosts(pool, profileText, likedUrls, skippedUrls, [], { count: TARGET, mode });
+    ranked = await rankPosts(pool, refinedGoal || profileText, likedUrls, skippedUrls, [], { count: TARGET, mode });
   } catch (err) {
     console.warn('[generate-list] Claude ranking failed:', err.message);
     try {

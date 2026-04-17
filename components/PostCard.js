@@ -38,6 +38,7 @@ export default function PostCard({ post, index, weekLabel, initialSignals = {}, 
   const [loading, setLoading] = useState(false);
   const [hovered, setHovered] = useState(false);
   const [tldrOpen, setTldrOpen] = useState(false);
+  const [showDownReason, setShowDownReason] = useState(false);
 
   const s      = (post.angle && ANGLE_STYLES[post.angle]) || SECTION_STYLES[post.section] || SECTION_STYLES[post.type] || SECTION_STYLES.discover;
   const isRead = !!signals.read;
@@ -47,6 +48,7 @@ export default function PostCard({ post, index, weekLabel, initialSignals = {}, 
 
   async function sendSignal(sig) {
     if (readOnly || loading) return;
+    setShowDownReason(false);
     setLoading(true);
     try {
       const res = await fetch('/api/signal', {
@@ -56,7 +58,9 @@ export default function PostCard({ post, index, weekLabel, initialSignals = {}, 
       const data = await res.json();
       setSignals(prev => {
         const n = { ...prev };
-        if (sig === 'up' || sig === 'down') { delete n.up; delete n.down; }
+        // Strip old up/down before setting new one (but keep typed reasons)
+        const baseSignal = sig.split(':')[0];
+        if (baseSignal === 'up' || baseSignal === 'down') { delete n.up; delete n.down; delete n['down:off-topic']; delete n['down:too-basic']; delete n['down:know-it']; }
         n[sig] = true;
         if (onSignal) onSignal(post.url, n);
         return n;
@@ -321,22 +325,59 @@ export default function PostCard({ post, index, weekLabel, initialSignals = {}, 
               ▲
             </button>
 
-            <button
-              onClick={() => sendSignal('down')}
-              disabled={loading}
-              title="Not for me"
-              style={{
-                padding: '5px 12px', borderRadius: 20,
-                border: '1.5px solid #DDD', color: '#bbb',
-                background: signals.down ? '#F4F3F0' : 'transparent',
-                opacity: signals.down ? 1 : .5,
-                fontSize: '.82rem',
-                cursor: loading ? 'not-allowed' : 'pointer',
-                transition: 'all .15s',
-              }}
-            >
-              ▼
-            </button>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '.35rem', flexWrap: 'wrap' }}>
+              <button
+                onClick={() => {
+                  if (loading) return;
+                  const hasDown = signals.down || signals['down:off-topic'] || signals['down:too-basic'] || signals['down:know-it'];
+                  if (hasDown) { sendSignal('down'); return; }
+                  setShowDownReason(r => !r);
+                }}
+                disabled={loading}
+                title="Not for me"
+                style={{
+                  padding: '5px 12px', borderRadius: 20,
+                  border: `1.5px solid ${showDownReason ? '#999' : '#DDD'}`,
+                  color: showDownReason ? '#666' : '#bbb',
+                  background: (signals.down || signals['down:off-topic'] || signals['down:too-basic'] || signals['down:know-it']) ? '#F4F3F0' : 'transparent',
+                  opacity: (signals.down || signals['down:off-topic'] || signals['down:too-basic'] || signals['down:know-it']) ? 1 : .5,
+                  fontSize: '.82rem',
+                  cursor: loading ? 'not-allowed' : 'pointer',
+                  transition: 'all .15s',
+                }}
+              >
+                ▼
+              </button>
+
+              {/* Reason chips */}
+              {showDownReason && (
+                <>
+                  {[
+                    { sig: 'down:off-topic', label: 'Off-topic' },
+                    { sig: 'down:too-basic', label: 'Too basic' },
+                    { sig: 'down:know-it',   label: 'Know this' },
+                  ].map(opt => (
+                    <button
+                      key={opt.sig}
+                      onClick={() => sendSignal(opt.sig)}
+                      style={{
+                        fontFamily: 'var(--font-body)', fontSize: '.62rem', fontWeight: 700,
+                        letterSpacing: '.05em',
+                        padding: '4px 10px', borderRadius: 20,
+                        border: '1.5px solid #E0DDD8',
+                        background: '#FAFAF8', color: '#777',
+                        cursor: 'pointer', transition: 'all .12s',
+                        animation: 'fadeInUp .15s ease both',
+                      }}
+                      onMouseEnter={e => { e.currentTarget.style.borderColor = '#999'; e.currentTarget.style.color = '#333'; }}
+                      onMouseLeave={e => { e.currentTarget.style.borderColor = '#E0DDD8'; e.currentTarget.style.color = '#777'; }}
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
+                </>
+              )}
+            </div>
 
             <a
               href={post.url} target="_blank" rel="noopener noreferrer"
@@ -355,11 +396,11 @@ export default function PostCard({ post, index, weekLabel, initialSignals = {}, 
           </div>
         )}
 
-        {readOnly && (signals.read || signals.up || signals.down) && (
+        {readOnly && (signals.read || signals.up || signals.down || signals['down:off-topic'] || signals['down:too-basic'] || signals['down:know-it']) && (
           <div style={{ display: 'flex', gap: '.5rem' }}>
             {signals.read && <span style={{ fontFamily: 'var(--font-body)', fontSize: '.6rem', color: '#999', letterSpacing: '.1em', textTransform: 'uppercase' }}>Read ✓</span>}
             {signals.up   && <span style={{ fontFamily: 'var(--font-body)', fontSize: '.6rem', color: s.accent, letterSpacing: '.1em', textTransform: 'uppercase' }}>▲ Liked</span>}
-            {signals.down && <span style={{ fontFamily: 'var(--font-body)', fontSize: '.6rem', color: '#bbb', letterSpacing: '.1em', textTransform: 'uppercase' }}>▼ Skipped</span>}
+            {(signals.down || signals['down:off-topic'] || signals['down:too-basic'] || signals['down:know-it']) && <span style={{ fontFamily: 'var(--font-body)', fontSize: '.6rem', color: '#bbb', letterSpacing: '.1em', textTransform: 'uppercase' }}>▼ Skipped</span>}
           </div>
         )}
       </div>
