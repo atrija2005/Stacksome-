@@ -251,11 +251,21 @@ export default function LandingPage() {
     }
   }
 
-  // Read in app — store interests in sessionStorage then go to app
-  function handleReadInApp() {
+  // Read in app — store interests then trigger sign-in (OAuth in prod, direct nav in dev)
+  async function handleReadInApp() {
     if (!heroInput.trim()) return;
     sessionStorage.setItem('ss_pending_interests', heroInput.trim());
-    router.push('/?start=1&interests=' + encodeURIComponent(heroInput.trim()));
+    if (process.env.NEXT_PUBLIC_DEV_AUTH_BYPASS === 'true') {
+      router.push('/?start=1');
+      return;
+    }
+    if (configured) {
+      setSigningIn(true);
+      try { await signInWithGoogle(); }
+      catch { router.push('/?start=1'); setSigningIn(false); }
+    } else {
+      router.push('/?start=1');
+    }
   }
 
   // Email flow

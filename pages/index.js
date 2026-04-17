@@ -321,7 +321,14 @@ export default function Home() {
       setActiveCtxId(lastId && saved.find(c => c.id === lastId) ? lastId : (saved[0]?.id || null));
     } catch { /* ignore */ }
     setLoading(false);
-    if (queryInterests) setInterestInput(queryInterests);
+    // Check for interests stored before OAuth redirect (from landing page hero input)
+    const pending = sessionStorage.getItem('ss_pending_interests');
+    if (pending) {
+      setInterestInput(pending);
+      sessionStorage.removeItem('ss_pending_interests');
+    } else if (queryInterests) {
+      setInterestInput(queryInterests);
+    }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, authLoading]);
 
