@@ -1,6 +1,7 @@
 import '../styles/globals.css';
 import { useEffect } from 'react';
 import { useRouter } from 'next/router';
+import { Analytics } from '@vercel/analytics/react';
 import { ToastProvider } from '../components/Toast';
 import { AuthProvider } from '../components/AuthProvider';
 
@@ -30,6 +31,7 @@ export default function App({ Component, pageProps }) {
       <ToastProvider>
         <KeyboardShortcuts />
         <Component {...pageProps} />
+        <Analytics />
       </ToastProvider>
     </AuthProvider>
   );
