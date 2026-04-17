@@ -461,38 +461,45 @@ export default function LandingPage() {
 
               {/* Eyebrow */}
               <style>{`
-                @keyframes eyebrowGlow {
-                  0%, 100% { box-shadow: 0 0 32px rgba(255,103,25,.6), 0 2px 14px rgba(255,103,25,.45); }
-                  50%       { box-shadow: 0 0 56px rgba(255,103,25,.9), 0 4px 24px rgba(255,103,25,.65); }
+                @keyframes badgeShimmer {
+                  0%   { transform: translateX(-120%) skewX(-15deg); }
+                  100% { transform: translateX(320%) skewX(-15deg); }
                 }
-                @keyframes dotBlink {
-                  0%, 100% { opacity: 1; transform: scale(1); }
-                  50%       { opacity: .35; transform: scale(.65); }
+                @keyframes badgePulse {
+                  0%, 100% { box-shadow: 0 0 0 0 rgba(255,103,25,.0), 0 8px 40px rgba(255,103,25,.7); }
+                  50%       { box-shadow: 0 0 0 8px rgba(255,103,25,.15), 0 8px 60px rgba(255,103,25,.9); }
                 }
-                .eyebrow-badge {
-                  animation: eyebrowGlow 2.5s ease-in-out infinite;
+                @keyframes sparkSpin {
+                  from { transform: rotate(0deg) scale(1); }
+                  50%  { transform: rotate(180deg) scale(1.25); }
+                  to   { transform: rotate(360deg) scale(1); }
                 }
-                .eyebrow-dot {
-                  animation: dotBlink 1.4s ease-in-out infinite;
-                }
+                .eyebrow-badge { animation: badgePulse 2.5s ease-in-out infinite; }
+                .eyebrow-shimmer { animation: badgeShimmer 2.2s ease-in-out infinite; animation-delay: 1s; }
+                .eyebrow-spark  { animation: sparkSpin 4s linear infinite; display: inline-block; }
               `}</style>
               <div
                 className="anim-fade-in eyebrow-badge"
                 style={{
-                  display: 'inline-flex', alignItems: 'center', gap: '.65rem',
-                  background: 'linear-gradient(135deg, #FF6719 0%, #FF8C4B 100%)',
-                  borderRadius: 99, padding: '11px 24px',
-                  fontSize: '.82rem', fontWeight: 800,
-                  letterSpacing: '.13em', textTransform: 'uppercase',
-                  color: '#fff', marginBottom: '2.25rem',
+                  position: 'relative', overflow: 'hidden',
+                  display: 'inline-flex', alignItems: 'center', gap: '.7rem',
+                  background: 'linear-gradient(135deg, #FF5500 0%, #FF6719 45%, #FF9A50 100%)',
+                  borderRadius: 14, padding: '14px 28px',
+                  fontSize: '.92rem', fontWeight: 900,
+                  letterSpacing: '.1em', textTransform: 'uppercase',
+                  color: '#fff', marginBottom: '2.5rem',
                   animationDelay: '100ms',
+                  border: '1px solid rgba(255,255,255,.25)',
                 }}
               >
-                <span className="eyebrow-dot" style={{
-                  width: 8, height: 8, borderRadius: '50%',
-                  background: '#fff', display: 'inline-block', flexShrink: 0,
+                {/* Shimmer sweep */}
+                <span className="eyebrow-shimmer" style={{
+                  position: 'absolute', top: 0, left: 0, bottom: 0, width: '35%',
+                  background: 'linear-gradient(90deg, transparent, rgba(255,255,255,.35), transparent)',
+                  pointerEvents: 'none',
                 }} />
-                Personal Substack Intelligence
+                <span className="eyebrow-spark" style={{ fontSize: '1rem', lineHeight: 1 }}>✦</span>
+                <span style={{ position: 'relative', zIndex: 1 }}>Personal Substack Intelligence</span>
               </div>
 
               {/* Headline — word-by-word reveal */}
