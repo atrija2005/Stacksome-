@@ -59,7 +59,8 @@ CREATE TABLE post_signals (
   id          BIGSERIAL PRIMARY KEY,
   user_id     UUID NOT NULL,
   post_url    TEXT NOT NULL,
-  signal      TEXT NOT NULL CHECK (signal IN ('up', 'down', 'read')),
+  -- 'up', 'read', 'down', 'down:off-topic', 'down:too-basic', 'down:know-it'
+  signal      TEXT NOT NULL,
   week_label  TEXT NOT NULL,
   created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
   UNIQUE (user_id, post_url, signal)
