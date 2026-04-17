@@ -1,0 +1,139 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1584 396" width="1584" height="396" role="img" aria-label="Stacksome LinkedIn Cover">
+  <defs>
+
+    <!-- Background gradient: warm black, deeper on right -->
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%"   stop-color="#1C1712"/>
+      <stop offset="55%"  stop-color="#0E0C0A"/>
+      <stop offset="100%" stop-color="#080808"/>
+    </linearGradient>
+
+    <!-- Bar gradient: deep orange → amber glow -->
+    <linearGradient id="barG" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%"   stop-color="#FF4500"/>
+      <stop offset="45%"  stop-color="#FF6719"/>
+      <stop offset="100%" stop-color="#FFBB66"/>
+    </linearGradient>
+
+    <!-- Reverse gradient for ghost bars -->
+    <linearGradient id="ghostG" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%"  stop-color="#FF6719" stop-opacity="0.0"/>
+      <stop offset="40%" stop-color="#FF6719" stop-opacity="1"/>
+      <stop offset="100%" stop-color="#FF6719" stop-opacity="0.6"/>
+    </linearGradient>
+
+    <!-- Catch-light: top edge shine -->
+    <linearGradient id="shine" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%"  stop-color="#fff" stop-opacity="0.22"/>
+      <stop offset="100%" stop-color="#fff" stop-opacity="0"/>
+    </linearGradient>
+
+    <!-- Left ambient glow -->
+    <radialGradient id="leftGlow" cx="28%" cy="50%" r="40%">
+      <stop offset="0%"   stop-color="#FF6719" stop-opacity="0.12"/>
+      <stop offset="100%" stop-color="#FF6719" stop-opacity="0"/>
+    </radialGradient>
+
+    <!-- Right ambient glow -->
+    <radialGradient id="rightGlow" cx="82%" cy="50%" r="38%">
+      <stop offset="0%"   stop-color="#FF6719" stop-opacity="0.08"/>
+      <stop offset="100%" stop-color="#FF6719" stop-opacity="0"/>
+    </radialGradient>
+
+    <!-- Bar glow filter -->
+    <filter id="bGlow" x="-4%" y="-120%" width="108%" height="340%">
+      <feGaussianBlur stdDeviation="5" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+
+    <!-- Soft blur for ghost bars -->
+    <filter id="softBlur" x="-2%" y="-20%" width="104%" height="140%">
+      <feGaussianBlur stdDeviation="1.5"/>
+    </filter>
+
+    <!-- Grain texture -->
+    <filter id="grain">
+      <feTurbulence type="fractalNoise" baseFrequency="0.70" numOctaves="4" stitchTiles="stitch" result="n"/>
+      <feColorMatrix type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0.028 0" result="t"/>
+      <feComposite in="SourceGraphic" in2="t" operator="over"/>
+    </filter>
+
+    <!-- Divider line gradient -->
+    <linearGradient id="lineG" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%"   stop-color="#FF6719" stop-opacity="0"/>
+      <stop offset="30%"  stop-color="#FF6719" stop-opacity="0.5"/>
+      <stop offset="70%"  stop-color="#FF6719" stop-opacity="0.5"/>
+      <stop offset="100%" stop-color="#FF6719" stop-opacity="0"/>
+    </linearGradient>
+
+  </defs>
+
+  <!-- ── BACKGROUND ─────────────────────────────────── -->
+  <rect width="1584" height="396" fill="url(#bg)"/>
+  <rect width="1584" height="396" fill="url(#leftGlow)"/>
+  <rect width="1584" height="396" fill="url(#rightGlow)"/>
+  <rect width="1584" height="396" fill="transparent" filter="url(#grain)"/>
+
+  <!-- ── GHOST BARS (full-width background pattern, very low opacity) -->
+  <!-- These span the entire width, creating a subtle stacked texture -->
+  <rect x="0" y="38"  width="1584" height="44" rx="0" fill="#FF6719" opacity="0.028"/>
+  <rect x="0" y="113" width="1584" height="44" rx="0" fill="#FF6719" opacity="0.022"/>
+  <rect x="0" y="188" width="1584" height="44" rx="0" fill="#FF6719" opacity="0.018"/>
+  <rect x="0" y="263" width="1584" height="44" rx="0" fill="#FF6719" opacity="0.013"/>
+  <rect x="0" y="338" width="1584" height="44" rx="0" fill="#FF6719" opacity="0.009"/>
+
+  <!-- ── FEATURE BARS (right side, full-height decorative, high contrast) -->
+  <!-- Bars fade in from ~x=900, anchored right, with glowing top bar -->
+
+  <!-- Bar 1 — top, electric glow -->
+  <rect x="860" y="38" width="644" height="44" rx="12" fill="url(#ghostG)" filter="url(#bGlow)" opacity="0.90"/>
+  <rect x="860" y="38" width="644" height="20" rx="12" fill="url(#shine)" opacity="0.9"/>
+
+  <!-- Bar 2 -->
+  <rect x="936" y="113" width="568" height="44" rx="12" fill="#FF6719" opacity="0.52"/>
+  <rect x="936" y="113" width="568" height="18" rx="12" fill="url(#shine)" opacity="0.45"/>
+
+  <!-- Bar 3 -->
+  <rect x="1012" y="188" width="492" height="44" rx="12" fill="#FF6719" opacity="0.34"/>
+  <rect x="1012" y="188" width="492" height="15" rx="12" fill="url(#shine)" opacity="0.30"/>
+
+  <!-- Bar 4 -->
+  <rect x="1090" y="263" width="414" height="44" rx="12" fill="#FF6719" opacity="0.20"/>
+
+  <!-- Bar 5 — faintest trace -->
+  <rect x="1168" y="338" width="336" height="44" rx="12" fill="#FF6719" opacity="0.10"/>
+
+  <!-- ── VERTICAL SEPARATOR ─────────────────────────── -->
+  <line x1="0" y1="395" x2="1584" y2="395" stroke="url(#lineG)" stroke-width="1.5"/>
+
+  <!-- ── LEFT CONTENT AREA ──────────────────────────── -->
+
+  <!-- Small icon mark: 3 mini bars stacked -->
+  <rect x="96" y="128" width="48" height="8"  rx="3" fill="url(#barG)" opacity="1.0"/>
+  <rect x="96" y="143" width="38" height="8"  rx="3" fill="#FF6719"    opacity="0.70"/>
+  <rect x="96" y="158" width="28" height="8"  rx="3" fill="#FF6719"    opacity="0.40"/>
+
+  <!-- Wordmark: "stack" white + "some" orange -->
+  <text x="96" y="237"
+        font-family="Georgia, 'Times New Roman', serif"
+        font-size="88" font-weight="700" letter-spacing="-3">
+    <tspan fill="#FFFFFF">stack</tspan><tspan fill="#FF6719">some</tspan>
+  </text>
+
+  <!-- Tagline -->
+  <text x="100" y="273"
+        font-family="Arial, Helvetica, sans-serif"
+        font-size="13.5" font-weight="400" letter-spacing="0.16em"
+        fill="rgba(255,255,255,0.35)">PERSONAL SUBSTACK INTELLIGENCE</text>
+
+  <!-- Subtle orange dot accent -->
+  <circle cx="80" cy="237" r="4" fill="#FF6719" opacity="0.6"/>
+
+  <!-- ── BUILDER CREDIT (bottom right) ─────────────── -->
+  <text x="1484" y="370"
+        font-family="Arial, Helvetica, sans-serif"
+        font-size="11" letter-spacing="0.08em"
+        fill="rgba(255,255,255,0.18)"
+        text-anchor="end">stacksome.vercel.app</text>
+
+</svg>
