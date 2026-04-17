@@ -460,38 +460,39 @@ export default function LandingPage() {
             }}>
 
               {/* Eyebrow */}
+              <style>{`
+                @keyframes eyebrowGlow {
+                  0%, 100% { box-shadow: 0 0 32px rgba(255,103,25,.6), 0 2px 14px rgba(255,103,25,.45); }
+                  50%       { box-shadow: 0 0 56px rgba(255,103,25,.9), 0 4px 24px rgba(255,103,25,.65); }
+                }
+                @keyframes dotBlink {
+                  0%, 100% { opacity: 1; transform: scale(1); }
+                  50%       { opacity: .35; transform: scale(.65); }
+                }
+                .eyebrow-badge {
+                  animation: eyebrowGlow 2.5s ease-in-out infinite;
+                }
+                .eyebrow-dot {
+                  animation: dotBlink 1.4s ease-in-out infinite;
+                }
+              `}</style>
               <div
-                className="anim-fade-in"
+                className="anim-fade-in eyebrow-badge"
                 style={{
-                  display: 'inline-flex', alignItems: 'center', gap: '.6rem',
+                  display: 'inline-flex', alignItems: 'center', gap: '.65rem',
                   background: 'linear-gradient(135deg, #FF6719 0%, #FF8C4B 100%)',
-                  borderRadius: 99, padding: '10px 22px',
-                  fontSize: '.8rem', fontWeight: 800,
-                  letterSpacing: '.12em', textTransform: 'uppercase',
+                  borderRadius: 99, padding: '11px 24px',
+                  fontSize: '.82rem', fontWeight: 800,
+                  letterSpacing: '.13em', textTransform: 'uppercase',
                   color: '#fff', marginBottom: '2.25rem',
                   animationDelay: '100ms',
-                  boxShadow: '0 0 40px rgba(255,103,25,.55), 0 2px 12px rgba(255,103,25,.4)',
-                  animation: 'anim-fade-in .6s ease both, eyebrowGlow 3s ease-in-out infinite',
                 }}
               >
-                <span style={{
-                  width: 7, height: 7, borderRadius: '50%',
-                  background: '#fff',
-                  display: 'inline-block',
-                  boxShadow: '0 0 8px rgba(255,255,255,.9)',
-                  animation: 'dotBlink 1.4s ease-in-out infinite',
+                <span className="eyebrow-dot" style={{
+                  width: 8, height: 8, borderRadius: '50%',
+                  background: '#fff', display: 'inline-block', flexShrink: 0,
                 }} />
                 Personal Substack Intelligence
-                <style>{`
-                  @keyframes eyebrowGlow {
-                    0%, 100% { box-shadow: 0 0 40px rgba(255,103,25,.55), 0 2px 12px rgba(255,103,25,.4); }
-                    50%       { box-shadow: 0 0 60px rgba(255,103,25,.75), 0 4px 20px rgba(255,103,25,.55); }
-                  }
-                  @keyframes dotBlink {
-                    0%, 100% { opacity: 1; transform: scale(1); }
-                    50%       { opacity: .4; transform: scale(.7); }
-                  }
-                `}</style>
               </div>
 
               {/* Headline — word-by-word reveal */}
