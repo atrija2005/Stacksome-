@@ -463,18 +463,35 @@ export default function LandingPage() {
               <div
                 className="anim-fade-in"
                 style={{
-                  display: 'inline-flex', alignItems: 'center', gap: '.5rem',
-                  border: '1px solid rgba(255,103,25,.35)',
-                  background: 'rgba(255,103,25,.1)',
-                  borderRadius: 99, padding: '6px 16px',
-                  fontSize: '.72rem', fontWeight: 700,
-                  letterSpacing: '.1em', textTransform: 'uppercase',
-                  color: '#FF8C4B', marginBottom: '2.25rem',
+                  display: 'inline-flex', alignItems: 'center', gap: '.6rem',
+                  background: 'linear-gradient(135deg, #FF6719 0%, #FF8C4B 100%)',
+                  borderRadius: 99, padding: '10px 22px',
+                  fontSize: '.8rem', fontWeight: 800,
+                  letterSpacing: '.12em', textTransform: 'uppercase',
+                  color: '#fff', marginBottom: '2.25rem',
                   animationDelay: '100ms',
+                  boxShadow: '0 0 40px rgba(255,103,25,.55), 0 2px 12px rgba(255,103,25,.4)',
+                  animation: 'anim-fade-in .6s ease both, eyebrowGlow 3s ease-in-out infinite',
                 }}
               >
-                <span className="dot-pulse" />
+                <span style={{
+                  width: 7, height: 7, borderRadius: '50%',
+                  background: '#fff',
+                  display: 'inline-block',
+                  boxShadow: '0 0 8px rgba(255,255,255,.9)',
+                  animation: 'dotBlink 1.4s ease-in-out infinite',
+                }} />
                 Personal Substack Intelligence
+                <style>{`
+                  @keyframes eyebrowGlow {
+                    0%, 100% { box-shadow: 0 0 40px rgba(255,103,25,.55), 0 2px 12px rgba(255,103,25,.4); }
+                    50%       { box-shadow: 0 0 60px rgba(255,103,25,.75), 0 4px 20px rgba(255,103,25,.55); }
+                  }
+                  @keyframes dotBlink {
+                    0%, 100% { opacity: 1; transform: scale(1); }
+                    50%       { opacity: .4; transform: scale(.7); }
+                  }
+                `}</style>
               </div>
 
               {/* Headline — word-by-word reveal */}
