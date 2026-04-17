@@ -4,36 +4,33 @@ export default async function handler(req, res) {
   const { token } = req.query;
 
   if (!token) {
-    return res.status(400).send(page('Invalid link', 'This unsubscribe link is invalid or has already been used.'));
+    return res.status(400).send(page('Invalid link', 'This unsubscribe link is invalid.'));
   }
 
   const supabase = createServiceClient();
 
-  const { data, error } = await supabase
-    .from('subscribers')
-    .update({ active: false })
-    .eq('unsubscribe_token', token)
-    .select('email')
-    .single();
+  // Find user by unsubscribe token
+  const { data: { users } } = await supabase.auth.admin.listUsers({ perPage: 1000 });
+  const user = users.find(u => u.user_metadata?.unsubscribe_token === token);
 
-  if (error || !data) {
+  if (!user) {
     return res.status(404).send(page('Already unsubscribed', "We couldn't find an active subscription for this link."));
   }
 
+  await supabase.auth.admin.updateUserById(user.id, {
+    user_metadata: { ...user.user_metadata, subscriber: false },
+  });
+
   return res.status(200).send(page(
     'Unsubscribed',
-    `You've been removed from Stacksome weekly reads. No more emails will be sent to ${data.email}.`
+    `You've been removed from Stacksome weekly reads. No more emails will be sent to ${user.email}.`
   ));
 }
 
 function page(title, message) {
   return `<!DOCTYPE html>
 <html>
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>${title} — Stacksome</title>
-</head>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${title} — Stacksome</title></head>
 <body style="margin:0;padding:60px 20px;background:#F7F5F2;font-family:Arial,sans-serif;text-align:center;">
   <a href="https://stacksome.vercel.app" style="font-family:Georgia,serif;font-size:24px;font-weight:700;color:#0A0A0A;text-decoration:none;">
     stack<span style="color:#FF6719;">some</span>

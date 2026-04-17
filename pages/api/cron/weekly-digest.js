@@ -1,7 +1,8 @@
 /**
  * GET /api/cron/weekly-digest
- * Invoked every Monday at 9am UTC by Vercel Cron.
- * Sends personalised Substack reading lists to all active subscribers.
+ * Fires every Monday at 9am UTC via Vercel Cron.
+ * Reads all active email subscribers from auth.users metadata,
+ * generates a personalised Substack digest for each, and sends it.
  */
 import { createServiceClient } from '../../../lib/supabase';
 import { discoverPosts } from '../../../lib/substack-discover';
@@ -20,18 +21,17 @@ export default async function handler(req, res) {
 
   const supabase = createServiceClient();
 
-  // Fetch all active subscribers
-  const { data: subscribers, error } = await supabase
-    .from('subscribers')
-    .select('id, email, interests, unsubscribe_token')
-    .eq('active', true);
+  // Fetch all users — subscribers have user_metadata.subscriber === true
+  const { data: { users }, error } = await supabase.auth.admin.listUsers({ perPage: 1000 });
 
   if (error) {
-    console.error('[weekly-digest] Failed to fetch subscribers:', error.message);
+    console.error('[weekly-digest] listUsers failed:', error.message);
     return res.status(500).json({ error: error.message });
   }
 
-  if (!subscribers || subscribers.length === 0) {
+  const subscribers = users.filter(u => u.user_metadata?.subscriber === true && u.email);
+
+  if (subscribers.length === 0) {
     return res.json({ success: true, sent: 0, message: 'No active subscribers.' });
   }
 
@@ -41,38 +41,32 @@ export default async function handler(req, res) {
 
   for (const sub of subscribers) {
     try {
-      // Discover posts for this subscriber's interests
-      let posts = await discoverPosts(sub.interests || 'technology startups', [], 80);
+      const interests = sub.user_metadata?.interests || 'technology startups';
+      const token = sub.user_metadata?.unsubscribe_token;
+      const unsubscribeUrl = token ? `${BASE_URL}/api/unsubscribe?token=${token}` : null;
+
+      let posts = await discoverPosts(interests, [], 80);
       posts = posts
         .sort((a, b) => (b._profileScore || 0) - (a._profileScore || 0))
         .slice(0, 10);
 
       if (posts.length === 0) {
-        console.warn(`[weekly-digest] No posts found for ${sub.email}`);
+        console.warn(`[weekly-digest] No posts for ${sub.email}`);
         results.failed++;
         continue;
       }
 
-      const unsubscribeUrl = `${BASE_URL}/api/unsubscribe?token=${sub.unsubscribe_token}`;
-
       await resend.emails.send({
         from:    'Stacksome <onboarding@resend.dev>',
         to:      sub.email,
-        subject: `Your Stacksome reads this week`,
-        html:    buildEmailHtml(posts, sub.interests, unsubscribeUrl),
+        subject: 'Your Stacksome reads this week',
+        html:    buildEmailHtml(posts, interests, unsubscribeUrl),
       });
 
-      // Update last_sent_at
-      await supabase
-        .from('subscribers')
-        .update({ last_sent_at: new Date().toISOString() })
-        .eq('id', sub.id);
-
       results.sent++;
-      console.log(`[weekly-digest] Sent to ${sub.email}`);
-
+      console.log(`[weekly-digest] ✓ ${sub.email}`);
     } catch (err) {
-      console.error(`[weekly-digest] Failed for ${sub.email}:`, err.message);
+      console.error(`[weekly-digest] ✗ ${sub.email}:`, err.message);
       results.failed++;
       results.errors.push({ email: sub.email, error: err.message });
     }
