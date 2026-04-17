@@ -347,6 +347,7 @@ export default function LandingPage() {
               {/* Anchor links */}
               <div className="landing-nav-links" style={{ display: 'flex', alignItems: 'center', gap: '.25rem' }}>
                 {[
+                  { href: '#about', label: 'About' },
                   { href: '#how-it-works', label: 'How it works' },
                   { href: '#features', label: 'Features' },
                   { href: '#faq', label: 'FAQ' },
@@ -414,6 +415,7 @@ export default function LandingPage() {
                   zIndex: 50,
                 }}>
                   {[
+                    { href: '#about', label: 'About' },
                     { href: '#how-it-works', label: 'How it works' },
                     { href: '#features', label: 'Features' },
                     { href: '#faq', label: 'FAQ' },
@@ -777,6 +779,144 @@ export default function LandingPage() {
             ))}
           </div>
         </div>
+
+        {/* ════════════════════════════════════════════════════════════════════
+            ABOUT
+            ════════════════════════════════════════════════════════════════ */}
+        <section id="about" style={{ background: '#fff', padding: 'clamp(3.5rem, 7vw, 6rem) 2rem', borderBottom: '1px solid #EEECEA' }}>
+          <div style={{ maxWidth: 1100, margin: '0 auto' }}>
+
+            {/* Top row: eyebrow + headline */}
+            <div style={{ maxWidth: 680, marginBottom: 'clamp(2.5rem, 5vw, 4rem)' }}>
+              <p className="reveal" style={{
+                fontFamily: 'var(--font-body)', fontSize: '.72rem', fontWeight: 700,
+                letterSpacing: '.14em', textTransform: 'uppercase',
+                color: '#FF6719', marginBottom: '.85rem',
+              }}>
+                What is Stacksome
+              </p>
+              <h2 className="reveal reveal-delay-1" style={{
+                fontFamily: 'var(--font-display)',
+                fontVariationSettings: "'opsz' 72",
+                fontSize: 'clamp(1.6rem, 3.5vw, 2.8rem)',
+                fontWeight: 900, color: '#0A0A0A',
+                lineHeight: 1.05, letterSpacing: '-.03em',
+                marginBottom: '1.25rem',
+              }}>
+                A curriculum engine built{' '}
+                <span style={{ fontStyle: 'italic', color: '#FF6719' }}>exclusively for Substack.</span>
+              </h2>
+              <p className="reveal reveal-delay-2" style={{
+                fontFamily: 'var(--font-body)', fontSize: 'clamp(.9rem, 1.8vw, 1.05rem)',
+                color: '#555', lineHeight: 1.85,
+              }}>
+                Stacksome takes your goal — an interview to prep for, a thesis to write, a sector to understand cold — and builds you a focused reading curriculum from across Substack. Not a feed. Not a digest. An ordered set of posts that takes you from zero to genuinely fluent.
+              </p>
+            </div>
+
+            {/* Substack-only badge — the key point, hard to miss */}
+            <div className="reveal" style={{
+              display: 'inline-flex', alignItems: 'flex-start', gap: '1.25rem',
+              background: '#0A0A0A',
+              borderRadius: 14,
+              padding: '1.5rem 2rem',
+              marginBottom: 'clamp(2.5rem, 5vw, 4rem)',
+              maxWidth: 680,
+            }}>
+              <div style={{
+                width: 40, height: 40, borderRadius: 10,
+                background: '#FF6719',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: '1.1rem', flexShrink: 0,
+              }}>
+                🔶
+              </div>
+              <div>
+                <p style={{
+                  fontFamily: 'var(--font-display)', fontVariationSettings: "'opsz' 24",
+                  fontSize: '1rem', fontWeight: 900, color: '#fff',
+                  margin: '0 0 .4rem', lineHeight: 1.2,
+                }}>
+                  Substack only. That's the whole point.
+                </p>
+                <p style={{
+                  fontFamily: 'var(--font-body)', fontSize: '.85rem',
+                  color: 'rgba(255,255,255,.5)', lineHeight: 1.75, margin: 0,
+                }}>
+                  Stacksome doesn't search Medium, X, the open web, or anywhere else. It searches <strong style={{ color: 'rgba(255,255,255,.8)', fontWeight: 600 }}>Substack and only Substack</strong> — because Substack is where the best long-form thinking lives. Founders writing sector theses. Analysts writing investment memos. Practitioners writing what they actually know. That's the pool we draw from. Nothing else.
+                </p>
+              </div>
+            </div>
+
+            {/* Three-column breakdown */}
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
+              gap: '1.25rem',
+            }}>
+              {[
+                {
+                  icon: '◎',
+                  color: '#0050c8',
+                  bg: '#EEF3FF',
+                  title: 'What it is',
+                  body: 'A goal-driven curriculum builder. You state what you're trying to understand or prepare for. Claude searches thousands of Substack publications, finds the posts that cover every angle, and structures them into an ordered reading path.',
+                },
+                {
+                  icon: '✕',
+                  color: '#DC2626',
+                  bg: '#FEF2F2',
+                  title: 'What it isn\'t',
+                  body: 'Not a newsletter aggregator. Not a Substack inbox replacement. Not a general web search. Stacksome doesn\'t surface blog posts, tweets, or Medium articles. It is a Substack-only tool, built for depth — not breadth.',
+                },
+                {
+                  icon: '◆',
+                  color: '#7C3AED',
+                  bg: '#F5F3FF',
+                  title: 'Who it\'s for',
+                  body: 'The analyst prepping for a PE interview. The founder writing a sector thesis before entering a new market. The student who won\'t settle for a surface-level read. Anyone who needs to go genuinely deep on a topic, fast.',
+                },
+              ].map((col, i) => (
+                <div
+                  key={col.title}
+                  className={`reveal reveal-delay-${i + 1}`}
+                  style={{
+                    padding: '1.75rem 1.85rem',
+                    border: '1px solid #EEECEA',
+                    borderTop: `3px solid ${col.color}`,
+                    borderRadius: 14,
+                    background: '#FAFAF8',
+                  }}
+                >
+                  <div style={{
+                    width: 36, height: 36, borderRadius: 9,
+                    background: col.bg,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    fontSize: '.95rem', color: col.color, fontWeight: 900,
+                    marginBottom: '1rem',
+                  }}>
+                    {col.icon}
+                  </div>
+                  <h3 style={{
+                    fontFamily: 'var(--font-display)',
+                    fontVariationSettings: "'opsz' 24",
+                    fontSize: '1.05rem', fontWeight: 700,
+                    color: '#0A0A0A', marginBottom: '.6rem',
+                  }}>
+                    {col.title}
+                  </h3>
+                  <p style={{
+                    fontFamily: 'var(--font-body)', fontSize: '.875rem',
+                    color: '#666', lineHeight: 1.8, margin: 0,
+                  }}>
+                    {col.body}
+                  </p>
+                </div>
+              ))}
+            </div>
+
+          </div>
+        </section>
 
         {/* ════════════════════════════════════════════════════════════════════
             HOW IT WORKS
