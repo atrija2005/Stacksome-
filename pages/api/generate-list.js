@@ -23,7 +23,7 @@ export default withAuth(async (req, res, user, supabase) => {
   let profileText = (bodyInterests || '').trim();
   if (!profileText) {
     try {
-      const profile = await getProfile(supabase);
+      const profile = await getProfile(supabase, user.id);
       profileText   = (profile?.interests || '').trim();
     } catch (err) {
       console.warn('[generate-list] getProfile failed:', err.message);
@@ -37,9 +37,9 @@ export default withAuth(async (req, res, user, supabase) => {
   // Signals for personalised ranking (optional — safe to fail)
   let likedUrls = [], skippedUrls = [];
   try {
-    const signals = await getAllSignals(supabase);
+    const signals = await getAllSignals(supabase, user.id);
     likedUrls   = signals.filter(s => s.signal === 'up').map(s => s.post_url).slice(0, 20);
-    skippedUrls = signals.filter(s => s.signal === 'down').map(s => s.post_url).slice(0, 20);
+    skippedUrls = signals.filter(s => s.signal === 'down' || s.signal.startsWith('down:')).map(s => s.post_url).slice(0, 20);
   } catch { /* non-fatal */ }
 
   // ── Step 1: Generate targeted search queries from the goal ───────────────────

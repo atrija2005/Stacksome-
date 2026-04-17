@@ -125,7 +125,7 @@ export default withAuth(async (req, res, user, supabase) => {
   // ── 1. DB posts ──────────────────────────────────────────────────────────
   let dbPosts = [];
   try {
-    const all = await getRecentPosts(supabase, 180);
+    const all = await getRecentPosts(supabase, user.id, 180);
     dbPosts = all
       .map(p => ({ ...p, _score: score(p.title, p.description, base, expanded) }))
       .filter(p => p._score > 0)

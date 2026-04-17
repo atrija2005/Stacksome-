@@ -5,7 +5,7 @@ import { fetchFeed } from '../../lib/rss';
 export default withAuth(async (req, res, user, supabase) => {
   if (req.method !== 'POST') return res.status(405).end();
 
-  const publications = await getPublications(supabase);
+  const publications = await getPublications(supabase, user.id);
   if (publications.length === 0) {
     return res.json({ success: true, fetched: 0, message: 'No publications tracked yet.' });
   }

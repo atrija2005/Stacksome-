@@ -8,15 +8,16 @@ export default withAuth(async (req, res, user, supabase) => {
   if (!postUrl || !signal || !weekLabel) {
     return res.status(400).json({ error: 'postUrl, signal, and weekLabel required' });
   }
-  if (!['up', 'down', 'read'].includes(signal)) {
-    return res.status(400).json({ error: 'signal must be up, down, or read' });
+  const validSignal = signal === 'up' || signal === 'read' || signal === 'down' || signal.startsWith('down:');
+  if (!validSignal) {
+    return res.status(400).json({ error: 'signal must be up, read, down, or down:<reason>' });
   }
 
   await upsertSignal(supabase, user.id, postUrl, signal, weekLabel);
 
-  const all = await getAllSignals(supabase);
+  const all = await getAllSignals(supabase, user.id);
   const upCount   = all.filter(s => s.signal === 'up').length;
-  const downCount = all.filter(s => s.signal === 'down').length;
+  const downCount = all.filter(s => s.signal === 'down' || s.signal.startsWith('down:')).length;
 
   return res.json({ success: true, upCount, downCount });
 });

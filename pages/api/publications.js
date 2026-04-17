@@ -4,7 +4,7 @@ import { toFeedUrl, toCanonicalUrl, validateAndParseFeed } from '../../lib/rss';
 
 export default withAuth(async (req, res, user, supabase) => {
   if (req.method === 'GET') {
-    const pubs = await getPublications(supabase);
+    const pubs = await getPublications(supabase, user.id);
     return res.json(pubs);
   }
 

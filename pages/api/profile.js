@@ -4,7 +4,7 @@ import { getProfile, updateProfile } from '../../lib/db';
 export default withAuth(async (req, res, user, supabase) => {
   if (req.method === 'GET') {
     try {
-      const profile = await getProfile(supabase);
+      const profile = await getProfile(supabase, user.id);
       return res.json(profile || { interests: '' });
     } catch {
       return res.json({ interests: '' });

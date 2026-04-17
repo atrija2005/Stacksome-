@@ -11,11 +11,11 @@ const Anthropic = require('@anthropic-ai/sdk');
 export default withAuth(async (req, res, user, supabase) => {
   if (req.method !== 'POST') return res.status(405).end();
 
-  const profile = await getProfile(supabase);
-  const signals = await getAllSignals(supabase);
+  const profile = await getProfile(supabase, user.id);
+  const signals = await getAllSignals(supabase, user.id);
 
   const upSignals   = signals.filter(s => s.signal === 'up');
-  const downSignals = signals.filter(s => s.signal === 'down');
+  const downSignals = signals.filter(s => s.signal === 'down' || s.signal.startsWith('down:'));
 
   if (upSignals.length < 3) {
     return res.status(400).json({
@@ -25,8 +25,20 @@ export default withAuth(async (req, res, user, supabase) => {
   }
 
   const likedUrls   = upSignals.map(s => s.post_url);
-  const skippedUrls = downSignals.map(s => s.post_url);
+  // Group downvotes by reason for richer context
+  const offTopicUrls  = downSignals.filter(s => s.signal === 'down:off-topic').map(s => s.post_url);
+  const tooBasicUrls  = downSignals.filter(s => s.signal === 'down:too-basic').map(s => s.post_url);
+  const knowItUrls    = downSignals.filter(s => s.signal === 'down:know-it').map(s => s.post_url);
+  const genericDownUrls = downSignals.filter(s => s.signal === 'down').map(s => s.post_url);
   const currentInterests = profile?.interests || '';
+
+  // Build downvote section for the prompt
+  const downSection = [
+    offTopicUrls.length  ? `Off-topic (wrong subject area):\n${offTopicUrls.map((u,i)=>`${i+1}. ${u}`).join('\n')}` : '',
+    tooBasicUrls.length  ? `Too basic (level too introductory):\n${tooBasicUrls.map((u,i)=>`${i+1}. ${u}`).join('\n')}` : '',
+    knowItUrls.length    ? `Already know this (familiar material):\n${knowItUrls.map((u,i)=>`${i+1}. ${u}`).join('\n')}` : '',
+    genericDownUrls.length ? `General skip:\n${genericDownUrls.map((u,i)=>`${i+1}. ${u}`).join('\n')}` : '',
+  ].filter(Boolean).join('\n\n') || '(none)';
 
   try {
     const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
@@ -39,10 +51,12 @@ Current profile:
 Posts the user UPVOTED (liked, found valuable) — URLs:
 ${likedUrls.slice(0, 20).map((u, i) => `${i + 1}. ${u}`).join('\n')}
 
-Posts the user DOWNVOTED (skipped, not relevant) — URLs:
-${skippedUrls.slice(0, 10).map((u, i) => `${i + 1}. ${u}`).join('\n')}
+Posts the user DOWNVOTED — grouped by reason:
+${downSection}
 
-Based on the publication names and topics visible in these URLs, infer what this person is genuinely interested in vs. what they are not.
+Based on the publication names, topics, and downvote reasons visible above, infer what this person is genuinely interested in vs. what they are not.
+If they frequently marked posts "too basic", note that they prefer advanced/expert-level content.
+If they marked posts "off-topic", focus their profile more narrowly on what they do engage with.
 
 Write an updated interest profile in 3-5 sentences that:
 - Captures the specific intellectual domains they engage with
