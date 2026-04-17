@@ -895,7 +895,7 @@ export default function LandingPage() {
                   color: '#0050c8',
                   bg: '#EEF3FF',
                   title: 'What it is',
-                  body: 'A goal-driven curriculum builder. You state what you're trying to understand or prepare for. Claude searches thousands of Substack publications, finds the posts that cover every angle, and structures them into an ordered reading path.',
+                  body: 'A goal-driven curriculum builder. You state what you\'re trying to understand or prepare for. Claude searches thousands of Substack publications, finds the posts that cover every angle, and structures them into an ordered reading path.',
                 },
                 {
                   icon: '✕',
