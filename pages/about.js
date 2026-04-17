@@ -77,7 +77,7 @@ export default function About() {
             fontFamily: 'Georgia, serif', fontSize: 'clamp(1rem, 2vw, 1.2rem)',
             color: '#333', lineHeight: 1.8, marginBottom: '1.25rem',
           }}>
-            Stacksome is a personal reading intelligence for Substack. Every week, it finds the best posts across thousands of newsletters — not just the ones you already follow — and curates a 10-post reading list built specifically around who you are and who you want to become.
+            Stacksome is a personal reading intelligence for Substack. Tell it what you want to understand — a sector, a topic, an idea — and it builds you a focused 5-post curriculum from across thousands of newsletters, ordered from foundation to depth.
           </p>
 
           <p style={{ fontFamily: 'Georgia, serif', fontSize: '1rem', color: C.muted, lineHeight: 1.75, fontStyle: 'italic' }}>
@@ -128,8 +128,8 @@ export default function About() {
           />
           <HowStep
             step="04"
-            title="Claude curates 10 posts for you"
-            body="Claude reads your profile, your references, your past signals, and the full pool of discovered posts — then selects exactly 10. Seven on-profile, two adjacent to stretch your thinking, one completely outside your world to create productive discomfort."
+            title="Claude builds your curriculum"
+            body="Claude reads your goal, your past signals, and the full pool of discovered posts — then selects exactly 5. Every post is directly on-topic. They're ordered as a reading path: post 1 gives you the foundation, post 5 goes deepest. No filler, no tangents."
           />
           <HowStep
             step="05"
@@ -155,8 +155,8 @@ export default function About() {
           <Principle
             number="II"
             color={C.orange}
-            title="The best ideas are outside your bubble"
-            body="Twenty percent of your reading should be adjacent to your interests, and ten percent should be completely foreign to it. Productive discomfort is how genuine insight happens. Stacksome builds this in by design — not by accident."
+            title="Depth beats breadth"
+            body="Five posts that genuinely advance your understanding of one topic are worth more than twenty loosely related links. Every curriculum is a focused reading path — not a collection. You finish it knowing something you didn't before."
           />
           <Principle
             number="III"
@@ -174,30 +174,32 @@ export default function About() {
 
         <Rule color="#e8e4de" />
 
-        {/* ── The 70/20/10 ── */}
+        {/* ── The curriculum ── */}
         <div style={{ marginBottom: '3rem' }}>
           <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: '1.75rem', fontWeight: 900, color: '#0a0a0a', marginBottom: '1rem' }}>
-            The 70 / 20 / 10 curriculum
+            What a curriculum looks like
           </h2>
           <p style={{ fontFamily: 'Georgia, serif', fontSize: '.95rem', color: '#444', lineHeight: 1.8, marginBottom: '1.5rem' }}>
-            Every generated list follows this structure — inspired by how the best professional development works.
+            Every curriculum is 5 posts, ordered as a deliberate reading path toward your stated goal.
           </p>
-          <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '.75rem' }}>
             {[
-              { pct: '70%', label: 'Core', color: C.red, desc: 'Directly on your profile. First-principles thinking, rigorous analysis, contrarian takes in your domain.' },
-              { pct: '20%', label: 'Adjacent', color: C.orange, desc: 'Same intellectual neighbourhood, different angle. Keeps your thinking from calcifying.' },
-              { pct: '10%', label: 'Wild', color: C.blue, desc: 'Completely different field. Maximum productive discomfort. The thing you never knew you needed.' },
+              { n: '01', label: 'Foundation', color: C.red, desc: 'The best entry point for your goal. Gives you the mental model everything else builds on.' },
+              { n: '02–04', label: 'Development', color: C.orange, desc: 'Posts that deepen, challenge, and expand the foundation. Each one assumes you\'ve read the last.' },
+              { n: '05', label: 'Depth', color: C.blue, desc: 'The most specific, rigorous post in the set. By post 5 you\'re reading at a level you couldn\'t have started at.' },
             ].map(x => (
-              <div key={x.label} style={{ flex: '1 1 180px', padding: '1.25rem', border: `2px solid ${x.color}`, background: '#fff' }}>
-                <div style={{ fontFamily: "Playfair Display, Georgia, serif", fontSize: '2.5rem', fontWeight: 900, color: x.color, lineHeight: 1 }}>
-                  {x.pct}
+              <div key={x.label} style={{ display: 'flex', gap: '1.25rem', padding: '1.1rem 1.4rem', border: `1px solid #e8e4de`, borderLeft: `3px solid ${x.color}`, background: '#fff' }}>
+                <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '.65rem', letterSpacing: '.1em', color: x.color, fontWeight: 700, flexShrink: 0, paddingTop: '2px' }}>
+                  {x.n}
                 </div>
-                <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '.6rem', letterSpacing: '.15em', textTransform: 'uppercase', color: C.muted, margin: '.4rem 0 .75rem' }}>
-                  {x.label}
+                <div>
+                  <div style={{ fontFamily: "'DM Mono', monospace", fontSize: '.6rem', letterSpacing: '.15em', textTransform: 'uppercase', color: C.muted, marginBottom: '.35rem' }}>
+                    {x.label}
+                  </div>
+                  <p style={{ fontFamily: 'Georgia, serif', fontSize: '.88rem', color: '#555', lineHeight: 1.65, margin: 0 }}>
+                    {x.desc}
+                  </p>
                 </div>
-                <p style={{ fontFamily: 'Georgia, serif', fontSize: '.82rem', color: '#555', lineHeight: 1.65, margin: 0 }}>
-                  {x.desc}
-                </p>
               </div>
             ))}
           </div>
