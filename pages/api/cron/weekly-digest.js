@@ -13,9 +13,10 @@ const resend = new Resend(process.env.RESEND_API_KEY);
 const BASE_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://stacksome.vercel.app';
 
 export default async function handler(req, res) {
-  // Vercel automatically sends Authorization: Bearer <CRON_SECRET>
+  // Require CRON_SECRET in all environments
   const authHeader = req.headers.authorization;
-  if (process.env.CRON_SECRET && authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+  const secret = process.env.CRON_SECRET;
+  if (!secret || authHeader !== `Bearer ${secret}`) {
     return res.status(401).json({ error: 'Unauthorized' });
   }
 
