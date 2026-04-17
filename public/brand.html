@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Stacksome Brand Assets</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #F7F5F2;
+      color: #0A0A0A;
+      min-height: 100vh;
+      padding: 60px 24px;
+    }
+    .header {
+      text-align: center;
+      margin-bottom: 64px;
+    }
+    .header h1 {
+      font-family: Georgia, serif;
+      font-size: 2rem;
+      font-weight: 700;
+      letter-spacing: -.04em;
+      margin-bottom: .4rem;
+    }
+    .header h1 span { color: #FF6719; }
+    .header p {
+      font-size: .9rem;
+      color: #888;
+    }
+    .grid {
+      max-width: 960px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 24px;
+    }
+    .card {
+      background: #fff;
+      border-radius: 16px;
+      overflow: hidden;
+      border: 1px solid #ECEAE6;
+      box-shadow: 0 4px 24px rgba(0,0,0,.06);
+    }
+    .preview {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 40px 24px;
+      min-height: 180px;
+    }
+    .preview.dark  { background: #0A0A0A; }
+    .preview.light { background: #F7F5F2; }
+    .preview.white { background: #FFFFFF; }
+    .preview img, .preview svg { max-width: 100%; max-height: 140px; }
+    .info {
+      padding: 20px 24px 24px;
+      border-top: 1px solid #F0EDE8;
+    }
+    .info h3 {
+      font-size: .85rem;
+      font-weight: 700;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+      color: #0A0A0A;
+      margin-bottom: .3rem;
+    }
+    .info p {
+      font-size: .78rem;
+      color: #999;
+      margin-bottom: 16px;
+    }
+    .dl-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: .4rem;
+      background: #0A0A0A;
+      color: #fff;
+      text-decoration: none;
+      font-size: .78rem;
+      font-weight: 700;
+      letter-spacing: .04em;
+      padding: 9px 18px;
+      border-radius: 8px;
+      transition: background .15s;
+    }
+    .dl-btn:hover { background: #FF6719; }
+    .dl-btn.orange { background: #FF6719; }
+    .dl-btn.orange:hover { background: #e05a12; }
+    .colors {
+      max-width: 960px;
+      margin: 48px auto 0;
+      background: #fff;
+      border-radius: 16px;
+      padding: 32px;
+      border: 1px solid #ECEAE6;
+    }
+    .colors h2 {
+      font-size: .75rem;
+      font-weight: 700;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      color: #bbb;
+      margin-bottom: 20px;
+    }
+    .swatches { display: flex; gap: 16px; flex-wrap: wrap; }
+    .swatch {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .dot {
+      width: 40px; height: 40px;
+      border-radius: 10px;
+      border: 1px solid rgba(0,0,0,.08);
+    }
+    .swatch-info span { display: block; }
+    .swatch-name { font-size: .8rem; font-weight: 700; }
+    .swatch-hex  { font-size: .75rem; color: #999; font-family: monospace; }
+  </style>
+</head>
+<body>
+
+  <div class="header">
+    <h1>stack<span>some</span> brand kit</h1>
+    <p>Logo files — right-click or use the download buttons below</p>
+  </div>
+
+  <div class="grid">
+
+    <!-- Icon -->
+    <div class="card">
+      <div class="preview dark">
+        <img src="/logo-icon.svg" alt="Stacksome icon" style="max-height:120px;max-width:120px;">
+      </div>
+      <div class="info">
+        <h3>App Icon</h3>
+        <p>Square icon · 512×512 · Dark background<br>For app stores, social media profile, favicon</p>
+        <a href="/logo-icon.svg" download="stacksome-icon.svg" class="dl-btn orange">↓ Download SVG</a>
+      </div>
+    </div>
+
+    <!-- Dark horizontal -->
+    <div class="card">
+      <div class="preview dark">
+        <img src="/logo-dark.svg" alt="Stacksome logo dark" style="max-height:80px;">
+      </div>
+      <div class="info">
+        <h3>Logo — Dark</h3>
+        <p>Horizontal lockup · 680×140 · Dark background<br>For dark headers, email signatures, dark slides</p>
+        <a href="/logo-dark.svg" download="stacksome-logo-dark.svg" class="dl-btn">↓ Download SVG</a>
+      </div>
+    </div>
+
+    <!-- Light horizontal -->
+    <div class="card">
+      <div class="preview white" style="border-bottom:1px solid #F0EDE8;">
+        <img src="/logo.svg" alt="Stacksome logo light" style="max-height:80px;">
+      </div>
+      <div class="info">
+        <h3>Logo — Light</h3>
+        <p>Horizontal lockup · 680×140 · White background<br>For light backgrounds, documents, presentations</p>
+        <a href="/logo.svg" download="stacksome-logo.svg" class="dl-btn">↓ Download SVG</a>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Brand colours -->
+  <div class="colors">
+    <h2>Brand Colours</h2>
+    <div class="swatches">
+      <div class="swatch">
+        <div class="dot" style="background:#FF6719;"></div>
+        <div class="swatch-info">
+          <span class="swatch-name">Stacksome Orange</span>
+          <span class="swatch-hex">#FF6719</span>
+        </div>
+      </div>
+      <div class="swatch">
+        <div class="dot" style="background:#FF4500;"></div>
+        <div class="swatch-info">
+          <span class="swatch-name">Deep Ember</span>
+          <span class="swatch-hex">#FF4500</span>
+        </div>
+      </div>
+      <div class="swatch">
+        <div class="dot" style="background:#FFAA55;"></div>
+        <div class="swatch-info">
+          <span class="swatch-name">Amber Glow</span>
+          <span class="swatch-hex">#FFAA55</span>
+        </div>
+      </div>
+      <div class="swatch">
+        <div class="dot" style="background:#0A0A0A; border-color:#ddd;"></div>
+        <div class="swatch-info">
+          <span class="swatch-name">Ink Black</span>
+          <span class="swatch-hex">#0A0A0A</span>
+        </div>
+      </div>
+      <div class="swatch">
+        <div class="dot" style="background:#F7F5F2; border-color:#ddd;"></div>
+        <div class="swatch-info">
+          <span class="swatch-name">Paper</span>
+          <span class="swatch-hex">#F7F5F2</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</body>
+</html>
