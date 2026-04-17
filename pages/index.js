@@ -56,6 +56,18 @@ function ChipPicker({ value, onChange }) {
   );
 }
 
+/* ── Angle styles (deep dive) ────────────────────────────────────────────── */
+const ANGLE_STYLES = {
+  'Overview':      { color: '#0050c8', bg: '#EEF3FF', icon: '◎' },
+  'Business Model':{ color: '#047857', bg: '#ECFDF5', icon: '◈' },
+  'Key Players':   { color: '#7C3AED', bg: '#F5F3FF', icon: '◆' },
+  'Bear Case':     { color: '#DC2626', bg: '#FEF2F2', icon: '▽' },
+  'Consensus':     { color: '#374151', bg: '#F9FAFB', icon: '◉' },
+  'Contrarian':    { color: '#FF6719', bg: '#FFF3EC', icon: '◇' },
+  'Edge':          { color: '#0891B2', bg: '#ECFEFF', icon: '◈' },
+};
+const DEEP_ANGLES = ['Overview','Business Model','Key Players','Bear Case','Consensus','Contrarian','Edge'];
+
 /* ── Context helpers ─────────────────────────────────────────────────────── */
 function deriveContextName(interests) {
   const parts = interests.split(',').map(s => s.trim()).filter(Boolean);
@@ -277,6 +289,7 @@ export default function Home() {
   const [buildingFirst, setBuildingFirst] = useState(false);
   const [buildPhase,    setBuildPhase]    = useState('');
   const [showNewForm,   setShowNewForm]   = useState(false);
+  const [diveMode,      setDiveMode]      = useState('quick'); // 'quick' | 'deep'
 
   // ── Generation state ──────────────────────────────────────────────────
   const [generating,  setGenning]    = useState(false);
@@ -318,10 +331,10 @@ export default function Home() {
     setShowNewForm(false);
   }
 
-  function saveNewContext(interests, posts) {
+  function saveNewContext(interests, posts, mode = 'quick') {
     const id  = `ctx_${Date.now()}`;
     const ctx = {
-      id, interests,
+      id, interests, mode,
       name: deriveContextName(interests),
       posts, signals: {},
       createdAt: new Date().toISOString(),
@@ -392,10 +405,10 @@ export default function Home() {
     try {
       const d = await (await fetch('/api/generate-list', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ interests }),
+        body: JSON.stringify({ interests, mode: diveMode }),
       })).json();
       if (d.error) { toast(d.error, 'error'); setBuildingFirst(false); setBuildPhase(''); return; }
-      saveNewContext(interests, d.posts || []);
+      saveNewContext(interests, d.posts || [], diveMode);
       setInterestInput('');
       setShowNewForm(false);
       router.replace('/', undefined, { shallow: true });
@@ -412,7 +425,7 @@ export default function Home() {
     try {
       const d = await (await fetch('/api/generate-list', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ interests: ctx.interests, excludeUrls }),
+        body: JSON.stringify({ interests: ctx.interests, excludeUrls, mode: ctx.mode || 'quick' }),
       })).json();
       if (d.error) { toast(d.error, 'error'); return false; }
       updateContextInPlace(ctxId, { posts: d.posts || [] });
@@ -508,15 +521,14 @@ export default function Home() {
             {/* Interest input */}
             {!buildingFirst && (
               <>
-                <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
-                  {/* Back button when adding a new topic */}
+                <div style={{ textAlign: 'center', marginBottom: '1.75rem' }}>
                   {showNewForm && contexts.length > 0 && (
                     <button
                       onClick={() => { setShowNewForm(false); setInterestInput(''); }}
                       style={{
                         fontFamily: 'var(--font-body)', fontSize: '.75rem',
                         color: '#bbb', background: 'none', border: 'none',
-                        cursor: 'pointer', marginBottom: '1.25rem', display: 'block', margin: '0 auto 1.25rem',
+                        cursor: 'pointer', display: 'block', margin: '0 auto 1.25rem',
                       }}
                     >
                       ← Back
@@ -536,15 +548,40 @@ export default function Home() {
                     fontSize: 'clamp(1.5rem,4vw,2rem)', fontWeight: 900,
                     color: '#0a0a0a', marginBottom: '.5rem',
                   }}>
-                    {showNewForm ? 'New reading topic' : 'What do you want to read about?'}
+                    {showNewForm ? 'New topic' : 'What do you want to go deep on?'}
                   </h2>
                   <p style={{
-                    fontFamily: 'var(--font-body)', fontSize: '.88rem',
-                    color: C.muted, lineHeight: 1.65,
+                    fontFamily: 'var(--font-body)', fontSize: '.85rem',
+                    color: C.muted, lineHeight: 1.65, marginBottom: '1.5rem',
                   }}>
-                    Pick topics below — or describe a specific goal.
-                    We'll build a 5-post reading curriculum just for it.
+                    Prep for an internship, write a sector thesis, or just go all in on a topic.
                   </p>
+
+                  {/* Mode toggle */}
+                  <div style={{ display: 'flex', gap: '.6rem', justifyContent: 'center' }}>
+                    {[
+                      { id: 'quick', label: 'Quick read', sub: '5 posts · ordered path', icon: '→' },
+                      { id: 'deep',  label: 'Deep dive',  sub: '7 posts · every angle',  icon: '⬛' },
+                    ].map(m => {
+                      const on = diveMode === m.id;
+                      return (
+                        <button key={m.id} onClick={() => setDiveMode(m.id)} style={{
+                          fontFamily: 'var(--font-body)', textAlign: 'left',
+                          padding: '10px 16px', borderRadius: 10, cursor: 'pointer',
+                          border: `2px solid ${on ? C.orange : '#E0DDD8'}`,
+                          background: on ? '#FFF3EC' : '#fff',
+                          transition: 'all .15s', minWidth: 130,
+                        }}>
+                          <div style={{ fontSize: '.72rem', fontWeight: 800, color: on ? C.orange : '#888', marginBottom: '.2rem' }}>
+                            {m.icon} {m.label}
+                          </div>
+                          <div style={{ fontSize: '.65rem', color: on ? '#c94a00' : '#bbb', fontWeight: 500 }}>
+                            {m.sub}
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
 
                 {/* Chip picker */}
@@ -572,7 +609,10 @@ export default function Home() {
                     if (e.key === 'Enter' && (e.metaKey || e.ctrlKey) && interestInput.trim()) handleBuildFirst();
                   }}
                   rows={2}
-                  placeholder={`e.g. "Understand DeFi from scratch" or "Best thinking on climate tech"`}
+                  placeholder={diveMode === 'deep'
+                    ? `e.g. "Prep for PE internship in FinTech" or "Sector thesis on climate tech"`
+                    : `e.g. "Understand DeFi from scratch" or "Best thinking on AI"`
+                  }
                   style={{
                     width: '100%', boxSizing: 'border-box',
                     fontFamily: 'var(--font-body)', fontSize: '.92rem',
@@ -599,14 +639,17 @@ export default function Home() {
                     transition: 'all .2s', marginBottom: '.65rem',
                   }}
                 >
-                  ✦ Build my curriculum
+                  {diveMode === 'deep' ? '⬛ Build my deep dive' : '✦ Build my curriculum'}
                 </button>
 
                 <p style={{
                   fontFamily: 'var(--font-body)', fontSize: '.7rem',
                   color: '#ccc', textAlign: 'center',
                 }}>
-                  5 posts · hand-picked by Claude · takes ~15 seconds
+                  {diveMode === 'deep'
+                    ? '7 posts · one per critical angle · built by Claude'
+                    : '5 posts · ordered path · hand-picked by Claude'
+                  } · takes ~15 seconds
                 </p>
               </>
             )}
@@ -674,18 +717,18 @@ export default function Home() {
               </div>
             )}
 
-            {/* Curriculum section header */}
+            {/* Section header */}
             {hasPosts && (
               <div style={{ marginBottom: '1.25rem' }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '.5rem' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '.65rem' }}>
                     <div style={{
                       width: 32, height: 32, borderRadius: 8,
-                      background: C.orange, display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      fontSize: '.8rem', fontWeight: 900, color: '#fff',
-                      fontFamily: 'var(--font-display)',
+                      background: activeCtx.mode === 'deep' ? '#0A0A0A' : C.orange,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      fontSize: '.75rem', fontWeight: 900, color: '#fff',
                     }}>
-                      ✦
+                      {activeCtx.mode === 'deep' ? '⬛' : '✦'}
                     </div>
                     <div>
                       <h2 style={{
@@ -693,22 +736,57 @@ export default function Home() {
                         fontSize: 'clamp(1.1rem,2.5vw,1.45rem)', fontWeight: 900,
                         color: '#0a0a0a', margin: 0, lineHeight: 1,
                       }}>
-                        Reading Path
+                        {activeCtx.mode === 'deep' ? 'Deep Dive Curriculum' : 'Reading Path'}
                       </h2>
                       <p style={{ fontFamily: 'var(--font-body)', fontSize: '.72rem', color: '#999', margin: '.2rem 0 0' }}>
-                        Ordered foundation → depth
+                        {activeCtx.mode === 'deep' ? 'One post per critical angle' : 'Ordered foundation → depth'}
                       </p>
                     </div>
                   </div>
                   <span style={{
-                    fontFamily: 'var(--font-mono)', fontSize: '.62rem', color: C.orange,
+                    fontFamily: 'var(--font-mono)', fontSize: '.62rem',
+                    color: activeCtx.mode === 'deep' ? '#0A0A0A' : C.orange,
                     padding: '3px 9px', borderRadius: 4,
-                    background: '#FFF3EC', border: '1px solid #FFD4BC',
+                    background: activeCtx.mode === 'deep' ? '#F0EFED' : '#FFF3EC',
+                    border: `1px solid ${activeCtx.mode === 'deep' ? '#D0CCC8' : '#FFD4BC'}`,
                   }}>
                     {orderedPosts.length} posts
                   </span>
                 </div>
-                <div style={{ height: 2, borderRadius: 2, background: `linear-gradient(90deg, ${C.orange}, ${C.orange}22)` }} />
+                <div style={{ height: 2, borderRadius: 2, background: `linear-gradient(90deg, ${activeCtx.mode === 'deep' ? '#0A0A0A' : C.orange}, transparent)` }} />
+              </div>
+            )}
+
+            {/* Deep dive: angle map overview */}
+            {activeCtx.mode === 'deep' && hasPosts && (
+              <div style={{
+                display: 'flex', flexWrap: 'wrap', gap: '.4rem',
+                marginBottom: '1.5rem',
+              }}>
+                {DEEP_ANGLES.map(angle => {
+                  const post = allPosts.find(p => p.angle === angle);
+                  const read = post && ctxSignals[post.url]?.read;
+                  const as = ANGLE_STYLES[angle] || {};
+                  return (
+                    <div key={angle} style={{
+                      display: 'flex', alignItems: 'center', gap: '.35rem',
+                      padding: '4px 10px', borderRadius: 99,
+                      border: `1.5px solid ${post ? as.color + '55' : '#ECEAE6'}`,
+                      background: read ? as.bg : (post ? '#fff' : '#FAFAF8'),
+                      opacity: post ? 1 : 0.45,
+                    }}>
+                      <span style={{ fontSize: '.6rem', color: post ? as.color : '#ccc' }}>
+                        {read ? '✓' : (post ? '○' : '—')}
+                      </span>
+                      <span style={{
+                        fontFamily: 'var(--font-body)', fontSize: '.62rem', fontWeight: 700,
+                        color: post ? as.color : '#ccc', letterSpacing: '.04em',
+                      }}>
+                        {angle}
+                      </span>
+                    </div>
+                  );
+                })}
               </div>
             )}
 

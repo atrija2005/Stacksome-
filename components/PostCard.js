@@ -1,6 +1,16 @@
 import { useState } from 'react';
 import { useToast } from './Toast';
 
+const ANGLE_STYLES = {
+  'Overview':       { accent: '#0050c8', accentBg: '#EEF3FF' },
+  'Business Model': { accent: '#047857', accentBg: '#ECFDF5' },
+  'Key Players':    { accent: '#7C3AED', accentBg: '#F5F3FF' },
+  'Bear Case':      { accent: '#DC2626', accentBg: '#FEF2F2' },
+  'Consensus':      { accent: '#374151', accentBg: '#F9FAFB' },
+  'Contrarian':     { accent: '#FF6719', accentBg: '#FFF3EC' },
+  'Edge':           { accent: '#0891B2', accentBg: '#ECFEFF' },
+};
+
 const SECTION_STYLES = {
   discover: { accent: '#FF6719', accentBg: '#FFF3EC', label: 'Fresh Pick' },
   stack:    { accent: '#0050c8', accentBg: '#EEF3FF', label: 'Your Stack' },
@@ -29,7 +39,7 @@ export default function PostCard({ post, index, weekLabel, initialSignals = {}, 
   const [hovered, setHovered] = useState(false);
   const [tldrOpen, setTldrOpen] = useState(false);
 
-  const s      = SECTION_STYLES[post.section] || SECTION_STYLES[post.type] || SECTION_STYLES.discover;
+  const s      = (post.angle && ANGLE_STYLES[post.angle]) || SECTION_STYLES[post.section] || SECTION_STYLES[post.type] || SECTION_STYLES.discover;
   const isRead = !!signals.read;
   const excerpt = truncate(post.description, 180);
   const date    = formatDate(post.published_at);
@@ -129,7 +139,7 @@ export default function PostCard({ post, index, weekLabel, initialSignals = {}, 
             color: isRead ? '#999' : '#fff',
             flexShrink: 0,
           }}>
-            {s.label}
+            {post.angle || s.label || 'Curated'}
           </span>
 
           {/* Publication name — most important meta */}

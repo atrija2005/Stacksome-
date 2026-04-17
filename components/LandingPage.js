@@ -135,23 +135,23 @@ function ChipPicker({ value, onChange, dark = false }) {
 const MOCK_CARDS = [
   {
     type: 'discover',
-    title: 'The Discipline of Thinking Slowly in a World Built for Speed',
-    pub: 'Ribbonfarm',
-    why: 'Matches your interest in cognitive science and decision-making under uncertainty.',
+    title: 'How FinTech Lending Actually Makes Money — And Where the Risk Hides',
+    pub: 'Net Interest',
+    why: 'Business Model angle — the unit economics every PE analyst needs to understand cold.',
     delay: '200ms',
   },
   {
     type: 'stack',
-    title: 'Why Founders Who Read History Build More Resilient Companies',
-    pub: 'Not Boring',
-    why: 'From your stack \u2014 one of Packy\u2019s best-researched pieces this quarter.',
+    title: 'The Bear Case for Embedded Finance That Nobody Is Talking About',
+    pub: 'Fintech Brain Food',
+    why: 'Bear Case angle — the uncomfortable risks the bulls aren\'t pricing in.',
     delay: '340ms',
   },
   {
     type: 'discover',
-    title: 'The Hidden Architecture of Every Idea That Changed the World',
-    pub: 'Works in Progress',
-    why: 'Aligns with your goal of understanding long-range technological shifts.',
+    title: 'Where FinTech Goes Next: The Infrastructure Layer Most People Are Missing',
+    pub: 'The Generalist',
+    why: 'Edge angle — the emerging shift that will define the next wave of winners.',
     delay: '480ms',
   },
 ];
@@ -159,18 +159,18 @@ const MOCK_CARDS = [
 const HOW_STEPS = [
   {
     n: '01',
-    title: 'Tell us who you\u2019re becoming',
-    desc: 'Add the Substack writers you follow. Describe your intellectual ambitions in a paragraph \u2014 not just your interests, but the person you\u2019re working to become.',
+    title: 'State your goal',
+    desc: 'Not just a topic — a real goal. "Prep for a FinTech internship." "Sector thesis on climate tech." "Everything I need to know about LLM infrastructure." The more specific, the sharper the curriculum.',
   },
   {
     n: '02',
-    title: 'We read everything',
-    desc: 'Stacksome fetches posts from 500+ curated publications and uses Claude to score every piece against your unique profile. You never see the noise.',
+    title: 'Choose your depth',
+    desc: 'Quick Read gives you 5 posts in an ordered path. Deep Dive gives you 7 posts — one per critical angle: Overview, Business Model, Key Players, Bear Case, Consensus, Contrarian, Edge.',
   },
   {
     n: '03',
-    title: 'You read what matters',
-    desc: '10 essays land in your curriculum every week. 7 are writers you\u2019ve never heard of. 3 are your trusted voices at their best. Every upvote makes the next list sharper.',
+    title: 'Walk in knowing the room',
+    desc: 'Claude searches thousands of Substack posts, selects only what directly serves your goal, and structures them into a curriculum. Read them in order. Come out the other side fluent.',
   },
 ];
 
@@ -519,9 +519,9 @@ export default function LandingPage() {
                   animationDelay: '1000ms',
                 }}
               >
-                Every week, AI reads hundreds of Substack newsletters and picks
-                the 10 posts most relevant to your interests. Fresh writers you&apos;ve
-                never heard of, plus the best from ones you already follow.
+                State your goal — a sector, an internship prep, a thesis — and Claude
+                builds you a deep-dive curriculum from across Substack. Every angle covered.
+                Every post earns its place.
               </p>
 
               {/* ── Hero inline onboarding ─────────────────────────────── */}
@@ -883,8 +883,8 @@ export default function LandingPage() {
               lineHeight: 1.35, letterSpacing: '-.02em',
               marginBottom: '2.5rem',
             }}>
-              &ldquo;The best essay you&apos;ll ever read is already published on Substack.
-              You just don&apos;t follow that writer yet.&rdquo;
+              &ldquo;The analyst who walks in knowing the bear case, the contrarian take,
+              and the emerging edge — that person wins the room.&rdquo;
             </blockquote>
             <p className="reveal reveal-delay-2" style={{
               fontFamily: 'var(--font-body)',
@@ -892,9 +892,9 @@ export default function LandingPage() {
               color: 'rgba(255,255,255,.45)',
               lineHeight: 1.8, maxWidth: 600, margin: '0 auto',
             }}>
-              You have 40 newsletters in your inbox and time for maybe 3. You skim.
-              You miss. The ideas that would have changed your thinking go unread.
-              Stacksome fixes this.
+              Stacksome builds that person. State your goal — internship prep, sector thesis,
+              deep research — and get a 7-post curriculum that covers every angle you need.
+              No filler. No tangents. Just the reads that matter.
             </p>
           </div>
         </section>
@@ -932,24 +932,24 @@ export default function LandingPage() {
             }}>
               {[
                 {
-                  icon: '\uD83D\uDD2D',
-                  title: 'Discovers writers you\u2019ve never read',
-                  desc: '7 of your 10 weekly essays come from publications outside your current reading. Curated from 500+ Substack writers across every intellectual domain.',
+                  icon: '⬛',
+                  title: 'Deep Dive curriculum',
+                  desc: '7 posts, one per critical angle: Overview, Business Model, Key Players, Bear Case, Consensus, Contrarian, Edge. Built for people who need to walk into a room knowing the sector cold.',
                 },
                 {
-                  icon: '\uD83C\uDFAF',
-                  title: 'Matched to who you\u2019re becoming',
-                  desc: 'Your profile captures your ambitions, not just your interests. Claude scores every post against it \u2014 the result is a list that pushes you forward.',
+                  icon: '🎯',
+                  title: 'Goal-first, not interest-first',
+                  desc: 'You don\'t tell Stacksome what you like. You tell it what you\'re preparing for. The curriculum is built backward from your goal — every post earns its place.',
                 },
                 {
-                  icon: '\u2728',
-                  title: 'Gets sharper the more you read',
-                  desc: 'Every upvote and downvote trains your taste. At 5, 10, and 20 upvotes, Claude rewrites your intellectual profile from scratch. It compounds.',
+                  icon: '✦',
+                  title: 'Quick Read mode',
+                  desc: '5 posts, ordered foundation to depth. For when you need orientation on a topic fast — not a full sector thesis, just a sharp introduction.',
                 },
                 {
-                  icon: '\uD83D\uDCDA',
-                  title: 'Your stack, at its best',
-                  desc: '3 of your weekly picks are from writers you already follow \u2014 but not just any posts. The most relevant ones to your current thinking.',
+                  icon: '📡',
+                  title: 'Searches across all of Substack',
+                  desc: 'Not just popular newsletters — Claude searches thousands of publications to find the specific posts that cover each angle of your goal. Writers you\'ve never heard of. Arguments you haven\'t seen.',
                 },
               ].map((f, i) => (
                 <div
@@ -1380,8 +1380,8 @@ export default function LandingPage() {
                 lineHeight: .97, letterSpacing: '-.04em',
                 marginBottom: '1.5rem',
               }}>
-                Start reading<br />
-                <span style={{ fontStyle: 'italic', color: '#FF6719' }}>smarter.</span>
+                Go deep.<br />
+                <span style={{ fontStyle: 'italic', color: '#FF6719' }}>Walk in ready.</span>
               </h2>
 
               <p className="reveal reveal-delay-1" style={{
@@ -1391,8 +1391,8 @@ export default function LandingPage() {
                 lineHeight: 1.8, maxWidth: 480,
                 margin: '0 auto 2.5rem',
               }}>
-                Free, forever. No credit card required. Your first curriculum
-                is ready in under two minutes.
+                Free, forever. State your goal and get a deep-dive curriculum
+                built by Claude in under two minutes.
               </p>
 
               <div className="reveal reveal-delay-2">

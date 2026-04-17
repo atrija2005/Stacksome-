@@ -3,7 +3,8 @@ import { getProfile, saveWeeklyList, getAllSignals } from '../../lib/db';
 import { rankPosts, localRankFallback } from '../../lib/claude';
 import { discoverPosts } from '../../lib/substack-discover';
 
-const TARGET = 5; // focused curriculum — 5 hyper-relevant posts
+const TARGET_QUICK = 5; // quick curriculum
+const TARGET_DEEP  = 7; // deep dive — one post per angle
 
 function getWeekLabel() {
   const now   = new Date();
@@ -15,7 +16,8 @@ function getWeekLabel() {
 export default withAuth(async (req, res, user, supabase) => {
   if (req.method !== 'POST') return res.status(405).end();
 
-  const { excludeUrls = [], interests: bodyInterests } = req.body || {};
+  const { excludeUrls = [], interests: bodyInterests, mode = 'quick' } = req.body || {};
+  const TARGET = mode === 'deep' ? TARGET_DEEP : TARGET_QUICK;
 
   // Load profile — wrapped so a missing table doesn't crash everything
   let profileText = (bodyInterests || '').trim();
@@ -59,7 +61,7 @@ export default withAuth(async (req, res, user, supabase) => {
   // Rank — Claude first, then local fallback, then raw score sort
   let ranked = [];
   try {
-    ranked = await rankPosts(pool, profileText, likedUrls, skippedUrls, [], { count: TARGET });
+    ranked = await rankPosts(pool, profileText, likedUrls, skippedUrls, [], { count: TARGET, mode });
   } catch (err) {
     console.warn('[generate-list] Claude ranking failed:', err.message);
     try {
@@ -85,10 +87,9 @@ export default withAuth(async (req, res, user, supabase) => {
   try {
     const weekLabel = getWeekLabel();
     await saveWeeklyList(supabase, user.id, weekLabel, ranked);
-    return res.json({ success: true, weekLabel, posts: ranked, meta: { total: ranked.length } });
+    return res.json({ success: true, weekLabel, posts: ranked, mode, meta: { total: ranked.length } });
   } catch (err) {
     console.warn('[generate-list] saveWeeklyList failed (returning posts anyway):', err.message);
-    // Still return the posts even if saving failed
-    return res.json({ success: true, weekLabel: getWeekLabel(), posts: ranked, meta: { total: ranked.length } });
+    return res.json({ success: true, weekLabel: getWeekLabel(), posts: ranked, mode, meta: { total: ranked.length } });
   }
 });

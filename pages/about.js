@@ -77,11 +77,11 @@ export default function About() {
             fontFamily: 'Georgia, serif', fontSize: 'clamp(1rem, 2vw, 1.2rem)',
             color: '#333', lineHeight: 1.8, marginBottom: '1.25rem',
           }}>
-            Stacksome is a personal reading intelligence for Substack. Tell it what you want to understand — a sector, a topic, an idea — and it builds you a focused 5-post curriculum from across thousands of newsletters, ordered from foundation to depth.
+            Stacksome is a deep-dive reading engine built on Substack. Tell it exactly what you want to understand — a sector, a preparation goal, a thesis — and it builds a focused curriculum from across thousands of newsletters, hand-picked by Claude to cover every critical angle.
           </p>
 
           <p style={{ fontFamily: 'Georgia, serif', fontSize: '1rem', color: C.muted, lineHeight: 1.75, fontStyle: 'italic' }}>
-            It's not a feed. It's not an algorithm. It's a curator that knows your intellectual ambitions and refuses to waste your time.
+            Not a feed. Not an algorithm. A curator that takes your goal seriously and refuses to waste your time with anything that doesn't directly serve it.
           </p>
         </div>
 
@@ -90,16 +90,16 @@ export default function About() {
         {/* ── The Problem ── */}
         <div style={{ marginBottom: '3rem' }}>
           <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: '1.75rem', fontWeight: 900, color: '#0a0a0a', marginBottom: '1rem' }}>
-            The problem with reading today
+            Who this is for
           </h2>
           <p style={{ fontFamily: 'Georgia, serif', fontSize: '.95rem', color: '#444', lineHeight: 1.8, marginBottom: '1rem' }}>
-            Substack has thousands of brilliant writers. But you only find them by accident — a retweet, a recommendation from a friend, a rabbit hole at 1am. Most great writing never reaches the people who would most benefit from it.
+            Stacksome is built for the person who needs to go all the way in. The analyst prepping for a PE internship who needs to walk into a first-round interview knowing the sector cold. The founder writing a thesis before entering a new market. The student who won't stop at the surface.
           </p>
           <p style={{ fontFamily: 'Georgia, serif', fontSize: '.95rem', color: '#444', lineHeight: 1.8, marginBottom: '1rem' }}>
-            And even if you subscribe to good newsletters, your inbox becomes noise. You read the same takes from the same circles, reinforcing what you already believe. The adjacent field that would sharpen your thinking never appears.
+            These people don't have time to skim 40 newsletters and hope the right essay shows up. They need a curriculum — a deliberate set of reads that covers every angle, from overview to contrarian, and gets them to genuine fluency fast.
           </p>
           <p style={{ fontFamily: 'Georgia, serif', fontSize: '.95rem', color: '#444', lineHeight: 1.8 }}>
-            Stacksome fixes this by doing the discovery for you — and doing it in a way that's tuned to your actual intellectual goals, not your engagement history.
+            That's what Stacksome builds. You state your goal. Claude finds the best posts from across Substack and structures them into a curriculum. You read them in order and come out the other side knowing something real.
           </p>
         </div>
 
@@ -113,18 +113,18 @@ export default function About() {
 
           <HowStep
             step="01"
-            title="You describe yourself"
-            body="Write a short profile of your interests, what you're building, and what kind of thinking you want more of. Speak it if you'd rather — there's a voice input. This profile is the foundation everything else is built on."
+            title="State your goal precisely"
+            body="Not just a topic — a goal. 'Prep for PE internship in FinTech.' 'Sector thesis on climate infrastructure.' 'Deep dive on LLM infrastructure before a board meeting.' The more specific, the sharper the curriculum."
           />
           <HowStep
             step="02"
-            title="You add references"
-            body="Add Substack publications you already love and trust. These aren't sources to recommend from — they calibrate taste. Claude reads them to understand your intellectual level and preferences, then uses that to find better things from sources you've never seen."
+            title="Choose your depth"
+            body="Quick Read gives you 5 posts ordered foundation to depth — good for orientation. Deep Dive gives you 7 posts, one per critical angle: Overview, Business Model, Key Players, Bear Case, Consensus, Contrarian, Edge. Built for serious preparation."
           />
           <HowStep
             step="03"
-            title="Discovery happens automatically"
-            body="Every time you generate a list, Stacksome live-fetches recent posts from 16+ curated Substack publications matched to your profile. These are writers you've probably never heard of — but whose thinking aligns with yours."
+            title="Claude searches across Substack"
+            body="Stacksome live-fetches posts from thousands of Substack publications matched to your goal — writers you've never heard of, covering angles you haven't considered. The pool is wide; the selection is ruthless."
           />
           <HowStep
             step="04"
@@ -149,8 +149,8 @@ export default function About() {
           <Principle
             number="I"
             color={C.red}
-            title="Reading should build character, not fill time"
-            body="Every post on your list should be there because it sharpens a specific quality — your judgment, your systems thinking, your tolerance for complexity. If it's just interesting, it doesn't make the cut."
+            title="A curriculum is not a reading list"
+            body="A reading list is a collection. A curriculum has a destination. Every post in a Stacksome curriculum is there because it serves a specific function in your path to understanding — not because it's vaguely related or recently popular."
           />
           <Principle
             number="II"
