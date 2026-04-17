@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200" role="img" aria-label="Stacksome icon">
+  <defs>
+    <linearGradient id="iconGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1A1A1A"/>
+      <stop offset="100%" stop-color="#0A0A0A"/>
+    </linearGradient>
+    <linearGradient id="barGrad3" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#FF6719"/>
+      <stop offset="100%" stop-color="#FF9A50"/>
+    </linearGradient>
+    <filter id="glow3" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="4" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+
+  <!-- Background: dark rounded square -->
+  <rect width="200" height="200" rx="40" fill="url(#iconGrad)"/>
+
+  <!-- Stacked bars, centered -->
+  <g transform="translate(40, 52)">
+    <!-- Top bar — full width, glowing -->
+    <rect x="0"  y="0"  width="120" height="26" rx="8" fill="url(#barGrad3)" filter="url(#glow3)"/>
+    <!-- Middle bar — inset left -->
+    <rect x="12" y="38" width="108" height="26" rx="8" fill="#FF6719" opacity="0.68"/>
+    <!-- Bottom bar — more inset -->
+    <rect x="26" y="76" width="94"  height="26" rx="8" fill="#FF6719" opacity="0.38"/>
+  </g>
+</svg>
