@@ -24,23 +24,13 @@ const TOPICS = [
   'Education', 'Productivity', 'Parenting',
 ];
 
-function topicsFromInput(v) {
-  return v.split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
-}
-function toggleTopic(current, chip) {
-  const parts = current.split(',').map(s => s.trim()).filter(Boolean);
-  const idx = parts.findIndex(p => p.toLowerCase() === chip.toLowerCase());
-  if (idx >= 0) parts.splice(idx, 1); else parts.push(chip);
-  return parts.join(', ');
-}
-function ChipPicker({ value, onChange }) {
-  const sel = topicsFromInput(value);
+function ChipPicker({ selected, onToggle }) {
   return (
     <div style={{ display: 'flex', flexWrap: 'wrap', gap: '.4rem' }}>
       {TOPICS.map(t => {
-        const on = sel.includes(t.toLowerCase());
+        const on = selected.includes(t);
         return (
-          <button key={t} type="button" onClick={() => onChange(toggleTopic(value, t))} style={{
+          <button key={t} type="button" onClick={() => onToggle(t)} style={{
             fontFamily: 'var(--font-body)', fontSize: '.72rem', fontWeight: on ? 700 : 500,
             padding: '6px 13px', borderRadius: 99,
             border: `1.5px solid ${on ? C.orange : '#E0DDD8'}`,
@@ -54,6 +44,14 @@ function ChipPicker({ value, onChange }) {
       })}
     </div>
   );
+}
+
+/* Combine chips + free text into a clear goal string for Claude */
+function buildGoal(chips, text) {
+  const c = chips.join(', ');
+  const t = text.trim();
+  if (c && t) return `Topics: ${c}. Goal: ${t}`;
+  return c || t;
 }
 
 /* ── Angle styles (deep dive) ────────────────────────────────────────────── */
@@ -285,7 +283,10 @@ export default function Home() {
   const [loading,      setLoading]    = useState(true);
 
   // ── Onboarding / form ─────────────────────────────────────────────────
-  const [interestInput, setInterestInput] = useState('');
+  const [selectedChips, setSelectedChips] = useState([]);
+  const [freeText,      setFreeText]      = useState('');
+  // Combined goal sent to Claude — chips + free text both respected
+  const interestInput = buildGoal(selectedChips, freeText);
   const [buildingFirst, setBuildingFirst] = useState(false);
   const [buildPhase,    setBuildPhase]    = useState('');
   const [showNewForm,   setShowNewForm]   = useState(false);
@@ -324,10 +325,10 @@ export default function Home() {
     // Check for interests stored before OAuth redirect (from landing page hero input)
     const pending = sessionStorage.getItem('ss_pending_interests');
     if (pending) {
-      setInterestInput(pending);
+      setFreeText(pending);
       sessionStorage.removeItem('ss_pending_interests');
     } else if (queryInterests) {
-      setInterestInput(queryInterests);
+      setFreeText(queryInterests);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, authLoading]);
@@ -453,7 +454,7 @@ export default function Home() {
       })).json();
       if (d.error) { toast(d.error, 'error'); setBuildingFirst(false); setBuildPhase(''); return; }
       saveNewContext(interests, d.posts || [], diveMode);
-      setInterestInput('');
+      setSelectedChips([]); setFreeText('');
       setShowNewForm(false);
       router.replace('/', undefined, { shallow: true });
     } catch {
@@ -643,7 +644,7 @@ export default function Home() {
                 <div style={{ textAlign: 'center', marginBottom: '1.75rem' }}>
                   {showNewForm && contexts.length > 0 && (
                     <button
-                      onClick={() => { setShowNewForm(false); setInterestInput(''); }}
+                      onClick={() => { setShowNewForm(false); setSelectedChips([]); setFreeText(''); }}
                       style={{
                         fontFamily: 'var(--font-body)', fontSize: '.75rem',
                         color: '#bbb', background: 'none', border: 'none',
@@ -710,20 +711,25 @@ export default function Home() {
                     letterSpacing: '.12em', textTransform: 'uppercase',
                     color: '#ccc', marginBottom: '.55rem',
                   }}>Tap topics</p>
-                  <ChipPicker value={interestInput} onChange={setInterestInput} />
+                  <ChipPicker
+                    selected={selectedChips}
+                    onToggle={t => setSelectedChips(prev =>
+                      prev.includes(t) ? prev.filter(c => c !== t) : [...prev, t]
+                    )}
+                  />
                 </div>
 
                 <div style={{ display: 'flex', alignItems: 'center', gap: '.75rem', margin: '.9rem 0' }}>
                   <div style={{ flex: 1, height: 1, background: '#e8e5e0' }} />
                   <span style={{ fontFamily: 'var(--font-body)', fontSize: '.62rem', color: '#ccc', letterSpacing: '.06em' }}>
-                    or describe your goal
+                    and / or describe your goal
                   </span>
                   <div style={{ flex: 1, height: 1, background: '#e8e5e0' }} />
                 </div>
 
                 <textarea
-                  value={interestInput}
-                  onChange={e => setInterestInput(e.target.value)}
+                  value={freeText}
+                  onChange={e => setFreeText(e.target.value)}
                   onKeyDown={e => {
                     if (e.key === 'Enter' && (e.metaKey || e.ctrlKey) && interestInput.trim()) handleGoalSubmit();
                   }}
@@ -799,7 +805,7 @@ export default function Home() {
               activeId={activeCtxId}
               onSwitch={switchContext}
               onDelete={deleteContext}
-              onNew={() => { setShowNewForm(true); setInterestInput(''); }}
+              onNew={() => { setShowNewForm(true); setSelectedChips([]); setFreeText(''); }}
             />
 
             {/* Toolbar */}
@@ -1027,7 +1033,7 @@ export default function Home() {
                       </div>
                       <button
                         onClick={() => {
-                          setInterestInput(nextGoal);
+                          setFreeText(nextGoal);
                           setShowNewForm(true);
                           window.scrollTo({ top: 0, behavior: 'smooth' });
                         }}

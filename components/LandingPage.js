@@ -86,28 +86,23 @@ const TOPICS = [
   'Education', 'Productivity', 'Parenting',
 ];
 
-function topicsFromInput(input) {
-  return input.split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
+function buildGoal(chips, text) {
+  const c = chips.join(', ');
+  const t = text.trim();
+  if (c && t) return `Topics: ${c}. Goal: ${t}`;
+  return c || t;
 }
 
-function toggleTopic(current, chip) {
-  const parts = current.split(',').map(s => s.trim()).filter(Boolean);
-  const idx = parts.findIndex(p => p.toLowerCase() === chip.toLowerCase());
-  if (idx >= 0) parts.splice(idx, 1); else parts.push(chip);
-  return parts.join(', ');
-}
-
-function ChipPicker({ value, onChange, dark = false }) {
-  const selected = topicsFromInput(value);
+function ChipPicker({ selected, onToggle, dark = false }) {
   return (
     <div style={{ display: 'flex', flexWrap: 'wrap', gap: '.4rem' }}>
       {TOPICS.map(t => {
-        const on = selected.includes(t.toLowerCase());
+        const on = selected.includes(t);
         return (
           <button
             key={t}
             type="button"
-            onClick={() => onChange(toggleTopic(value, t))}
+            onClick={() => onToggle(t)}
             style={{
               fontFamily: 'var(--font-body)',
               fontSize: '.72rem',
@@ -215,8 +210,10 @@ export default function LandingPage() {
   const [year,         setYear]         = useState(2025);
   const [openFaq,      setOpenFaq]      = useState(null);
   const [mobileMenu,   setMobileMenu]   = useState(false);
-  // Hero inline onboarding
-  const [heroInput,    setHeroInput]    = useState('');
+  // Hero inline onboarding — chips and free text kept separate
+  const [heroChips,    setHeroChips]    = useState([]);
+  const [heroFreeText, setHeroFreeText] = useState('');
+  const heroInput = buildGoal(heroChips, heroFreeText);
   const [heroMode,     setHeroMode]     = useState('idle'); // idle | email | sending | sent | loading
   const [heroEmail,    setHeroEmail]    = useState('');
   const [heroError,    setHeroError]    = useState('');
@@ -589,14 +586,20 @@ export default function LandingPage() {
                       }}>
                         Pick your topics
                       </p>
-                      <ChipPicker value={heroInput} onChange={setHeroInput} dark />
+                      <ChipPicker
+                        selected={heroChips}
+                        onToggle={t => setHeroChips(prev =>
+                          prev.includes(t) ? prev.filter(c => c !== t) : [...prev, t]
+                        )}
+                        dark
+                      />
                     </div>
 
                     {/* Divider */}
                     <div style={{ display: 'flex', alignItems: 'center', gap: '.75rem', margin: '.85rem 0' }}>
                       <div style={{ flex: 1, height: 1, background: 'rgba(255,255,255,.08)' }} />
                       <span style={{ fontFamily: 'var(--font-body)', fontSize: '.65rem', color: 'rgba(255,255,255,.25)', letterSpacing: '.08em' }}>
-                        or type your own
+                        and / or describe your goal
                       </span>
                       <div style={{ flex: 1, height: 1, background: 'rgba(255,255,255,.08)' }} />
                     </div>
@@ -605,8 +608,8 @@ export default function LandingPage() {
                     <div style={{ position: 'relative', marginBottom: '1rem' }}>
                       <textarea
                         ref={heroTextareaRef}
-                        value={heroInput}
-                        onChange={e => setHeroInput(e.target.value)}
+                        value={heroFreeText}
+                        onChange={e => setHeroFreeText(e.target.value)}
                         onKeyDown={e => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey) && heroInput.trim()) handleReadInApp(); }}
                         rows={2}
                         placeholder="e.g. &quot;AI and startups&quot;, &quot;education and child development&quot;, &quot;climate and energy&quot;…"
