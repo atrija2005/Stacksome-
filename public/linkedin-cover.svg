@@ -7,19 +7,16 @@
       <stop offset="100%" stop-color="#040302"/>
     </linearGradient>
 
-    <linearGradient id="barG" x1="0" y1="0" x2="1" y2="0">
-      <stop offset="0%"   stop-color="#BB2E00"/>
-      <stop offset="30%"  stop-color="#FF4500"/>
-      <stop offset="65%"  stop-color="#FF6719"/>
-      <stop offset="100%" stop-color="#FFB84D"/>
+    <!-- Bars fade LEFT→RIGHT (opaque at left, transparent at right) -->
+    <linearGradient id="barFadeG" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%"   stop-color="#FF4500" stop-opacity="1"/>
+      <stop offset="60%"  stop-color="#FF6719" stop-opacity="0.85"/>
+      <stop offset="100%" stop-color="#FFB84D" stop-opacity="0"/>
     </linearGradient>
 
-    <!-- Feature bar: hard fade-in from transparent -->
-    <linearGradient id="fadeG" x1="0" y1="0" x2="1" y2="0">
-      <stop offset="0%"   stop-color="#FF4500" stop-opacity="0"/>
-      <stop offset="18%"  stop-color="#FF4500" stop-opacity="1"/>
-      <stop offset="65%"  stop-color="#FF6719" stop-opacity="1"/>
-      <stop offset="100%" stop-color="#FFB84D" stop-opacity="0.75"/>
+    <linearGradient id="bar2G" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%"   stop-color="#FF4500" stop-opacity="0.72"/>
+      <stop offset="100%" stop-color="#FF6719" stop-opacity="0"/>
     </linearGradient>
 
     <linearGradient id="miniG" x1="0" y1="0" x2="1" y2="0">
@@ -27,39 +24,30 @@
       <stop offset="100%" stop-color="#FFAA55"/>
     </linearGradient>
 
-    <!-- Vertical accent gradient -->
     <linearGradient id="accentG" x1="0" y1="0" x2="0" y2="1">
       <stop offset="0%"   stop-color="#FF6719" stop-opacity="0"/>
-      <stop offset="20%"  stop-color="#FF6719" stop-opacity="0.80"/>
-      <stop offset="80%"  stop-color="#FF6719" stop-opacity="0.80"/>
+      <stop offset="20%"  stop-color="#FF6719" stop-opacity="0.75"/>
+      <stop offset="80%"  stop-color="#FF6719" stop-opacity="0.75"/>
       <stop offset="100%" stop-color="#FF6719" stop-opacity="0"/>
     </linearGradient>
 
     <linearGradient id="shG" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%"   stop-color="#fff" stop-opacity="0.28"/>
+      <stop offset="0%"   stop-color="#fff" stop-opacity="0.26"/>
       <stop offset="100%" stop-color="#fff" stop-opacity="0"/>
     </linearGradient>
 
-    <!-- Main ambient glow — center right -->
-    <radialGradient id="ambG" cx="71%" cy="50%" r="36%">
-      <stop offset="0%"   stop-color="#FF6719" stop-opacity="0.20"/>
-      <stop offset="50%"  stop-color="#FF4500" stop-opacity="0.08"/>
+    <!-- Glow on the LEFT where bars are -->
+    <radialGradient id="ambG" cx="28%" cy="50%" r="36%">
+      <stop offset="0%"   stop-color="#FF6719" stop-opacity="0.18"/>
       <stop offset="100%" stop-color="#FF4500" stop-opacity="0"/>
     </radialGradient>
 
-    <!-- Secondary glow far right -->
-    <radialGradient id="glR" cx="94%" cy="50%" r="18%">
-      <stop offset="0%"   stop-color="#FF8830" stop-opacity="0.14"/>
-      <stop offset="100%" stop-color="#FF8830" stop-opacity="0"/>
-    </radialGradient>
-
-    <!-- Subtle brand area glow -->
-    <radialGradient id="glL" cx="30%" cy="63%" r="24%">
-      <stop offset="0%"   stop-color="#FF6719" stop-opacity="0.08"/>
+    <!-- Subtle glow behind right content -->
+    <radialGradient id="glR" cx="82%" cy="55%" r="22%">
+      <stop offset="0%"   stop-color="#FF6719" stop-opacity="0.10"/>
       <stop offset="100%" stop-color="#FF6719" stop-opacity="0"/>
     </radialGradient>
 
-    <!-- Bar bloom filter -->
     <filter id="bloom" x="-4%" y="-140%" width="108%" height="380%">
       <feGaussianBlur stdDeviation="6" result="b1"/>
       <feGaussianBlur in="SourceGraphic" stdDeviation="2.5" result="b2"/>
@@ -83,7 +71,7 @@
     </filter>
 
     <pattern id="dots" x="0" y="0" width="22" height="22" patternUnits="userSpaceOnUse">
-      <circle cx="11" cy="11" r="0.7" fill="#FF6719" opacity="0.14"/>
+      <circle cx="11" cy="11" r="0.7" fill="#FF6719" opacity="0.13"/>
     </pattern>
 
   </defs>
@@ -93,59 +81,58 @@
   <rect width="1128" height="191" fill="url(#dots)"/>
   <rect width="1128" height="191" fill="url(#ambG)"/>
   <rect width="1128" height="191" fill="url(#glR)"/>
-  <rect width="1128" height="191" fill="url(#glL)"/>
   <rect width="1128" height="191" fill="transparent" filter="url(#grain)"/>
 
   <!-- Subtle horizontal guide lines -->
-  <line x1="0" y1="63.7"  x2="1128" y2="63.7"  stroke="#FF6719" stroke-width="0.5" opacity="0.055"/>
-  <line x1="0" y1="127.3" x2="1128" y2="127.3" stroke="#FF6719" stroke-width="0.5" opacity="0.038"/>
+  <line x1="0" y1="63.7"  x2="1128" y2="63.7"  stroke="#FF6719" stroke-width="0.5" opacity="0.05"/>
+  <line x1="0" y1="127.3" x2="1128" y2="127.3" stroke="#FF6719" stroke-width="0.5" opacity="0.035"/>
 
-  <!-- ── FEATURE BARS — right side, staggered cascade ── -->
+  <!-- ── FEATURE BARS — LEFT SIDE, cascade fading to the right ── -->
 
-  <!-- Bar 1 — top, primary glow bar -->
-  <rect x="548" y="11"  width="580" height="32" rx="9" fill="url(#fadeG)" filter="url(#bloom)" opacity="0.97"/>
-  <rect x="548" y="11"  width="580" height="15" rx="9" fill="url(#shG)"/>
+  <!-- Bar 1 — top, primary bloom bar -->
+  <rect x="0" y="11"  width="610" height="32" rx="0" fill="url(#barFadeG)" filter="url(#bloom)" opacity="0.97"/>
+  <rect x="0" y="11"  width="610" height="15" rx="0" fill="url(#shG)"/>
 
   <!-- Bar 2 -->
-  <rect x="594" y="53"  width="534" height="28" rx="8" fill="#FF6719" opacity="0.57" filter="url(#softB)"/>
-  <rect x="594" y="53"  width="534" height="13" rx="8" fill="url(#shG)" opacity="0.44"/>
+  <rect x="0" y="53"  width="545" height="28" rx="0" fill="url(#bar2G)" filter="url(#softB)"/>
+  <rect x="0" y="53"  width="545" height="13" rx="0" fill="url(#shG)" opacity="0.40"/>
 
-  <!-- Bar 3 — center -->
-  <rect x="641" y="95"  width="487" height="26" rx="7" fill="#FF6719" opacity="0.37"/>
-  <rect x="641" y="95"  width="487" height="12" rx="7" fill="url(#shG)" opacity="0.28"/>
+  <!-- Bar 3 -->
+  <rect x="0" y="95"  width="480" height="26" rx="0" fill="#FF6719" opacity="0.30"/>
+  <rect x="0" y="95"  width="480" height="12" rx="0" fill="url(#shG)" opacity="0.22"/>
 
   <!-- Bar 4 -->
-  <rect x="688" y="135" width="440" height="22" rx="6" fill="#FF6719" opacity="0.20"/>
-  <rect x="688" y="135" width="440" height="10" rx="6" fill="url(#shG)" opacity="0.16"/>
+  <rect x="0" y="135" width="415" height="22" rx="0" fill="#FF6719" opacity="0.16"/>
+  <rect x="0" y="135" width="415" height="10" rx="0" fill="url(#shG)" opacity="0.12"/>
 
   <!-- Bar 5 — faintest -->
-  <rect x="735" y="160" width="393" height="17" rx="5" fill="#FF6719" opacity="0.10"/>
+  <rect x="0" y="160" width="350" height="17" rx="0" fill="#FF6719" opacity="0.08"/>
 
-  <!-- ── VERTICAL ACCENT LINE ── -->
-  <rect x="315" y="20" width="2" height="151" rx="1" fill="url(#accentG)"/>
+  <!-- ── VERTICAL DIVIDER — separates bars from content ── -->
+  <rect x="660" y="18" width="1.5" height="155" rx="0.75" fill="url(#accentG)"/>
 
-  <!-- ── CONTENT — safe zone x=328+ ── -->
+  <!-- ── CONTENT — right side, x=678+ ── -->
 
-  <!-- Mini icon: 3 bars -->
-  <rect x="330" y="40" width="32" height="8" rx="2.5" fill="url(#miniG)"/>
-  <rect x="330" y="54" width="25" height="8" rx="2.5" fill="#FF6719" opacity="0.68"/>
-  <rect x="330" y="68" width="16" height="8" rx="2.5" fill="#FF6719" opacity="0.36"/>
+  <!-- Mini icon: 3 stacked bars -->
+  <rect x="680" y="40" width="32" height="8" rx="2.5" fill="url(#miniG)"/>
+  <rect x="680" y="54" width="25" height="8" rx="2.5" fill="#FF6719" opacity="0.68"/>
+  <rect x="680" y="68" width="16" height="8" rx="2.5" fill="#FF6719" opacity="0.36"/>
 
   <!-- "stacksome" wordmark -->
-  <text x="330" y="119"
+  <text x="680" y="119"
         font-family="Georgia, 'Times New Roman', serif"
         font-size="44" font-weight="700" letter-spacing="-1.5">
     <tspan fill="#FFFFFF">stack</tspan><tspan fill="#FF6719">some</tspan>
   </text>
 
   <!-- Tagline -->
-  <text x="332" y="140"
+  <text x="682" y="140"
         font-family="Arial, Helvetica, sans-serif"
         font-size="10" letter-spacing="0.20em"
-        fill="rgba(255,255,255,0.28)">PERSONAL SUBSTACK INTELLIGENCE</text>
+        fill="rgba(255,255,255,0.30)">PERSONAL SUBSTACK INTELLIGENCE</text>
 
   <!-- Rule below tagline -->
-  <line x1="332" y1="150" x2="572" y2="150" stroke="rgba(255,255,255,0.10)" stroke-width="0.75"/>
+  <line x1="682" y1="150" x2="930" y2="150" stroke="rgba(255,255,255,0.09)" stroke-width="0.75"/>
 
   <!-- URL bottom right -->
   <text x="1112" y="181"
