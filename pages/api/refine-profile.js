@@ -79,7 +79,7 @@ Return ONLY the updated profile text — no preamble, no explanation, no quotes.
     return res.json({
       success: true,
       profile: refined,
-      signalsUsed: { liked: likedUrls.length, skipped: skippedUrls.length },
+      signalsUsed: { liked: likedUrls.length, skipped: downSignals.length },
     });
   } catch (err) {
     if (!process.env.ANTHROPIC_API_KEY || err.status === 401 || err.status === 402 || err.status === 403) {

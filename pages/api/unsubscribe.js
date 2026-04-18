@@ -7,24 +7,27 @@ export default async function handler(req, res) {
     return res.status(400).send(page('Invalid link', 'This unsubscribe link is invalid.'));
   }
 
-  const supabase = createServiceClient();
+  try {
+    const supabase = createServiceClient();
+    const { data: { users } } = await supabase.auth.admin.listUsers({ perPage: 1000 });
+    const user = users.find(u => u.user_metadata?.unsubscribe_token === token);
 
-  // Find user by unsubscribe token
-  const { data: { users } } = await supabase.auth.admin.listUsers({ perPage: 1000 });
-  const user = users.find(u => u.user_metadata?.unsubscribe_token === token);
+    if (!user) {
+      return res.status(404).send(page('Already unsubscribed', "We couldn't find an active subscription for this link."));
+    }
 
-  if (!user) {
-    return res.status(404).send(page('Already unsubscribed', "We couldn't find an active subscription for this link."));
+    await supabase.auth.admin.updateUserById(user.id, {
+      user_metadata: { ...user.user_metadata, subscriber: false },
+    });
+
+    return res.status(200).send(page(
+      'Unsubscribed',
+      `You've been removed from Stacksome weekly reads. No more emails will be sent to ${user.email}.`
+    ));
+  } catch (err) {
+    console.error('[unsubscribe] Error:', err.message);
+    return res.status(500).send(page('Error', 'Something went wrong. Please try again.'));
   }
-
-  await supabase.auth.admin.updateUserById(user.id, {
-    user_metadata: { ...user.user_metadata, subscriber: false },
-  });
-
-  return res.status(200).send(page(
-    'Unsubscribed',
-    `You've been removed from Stacksome weekly reads. No more emails will be sent to ${user.email}.`
-  ));
 }
 
 function page(title, message) {

@@ -13,11 +13,14 @@ export default withAuth(async (req, res, user, supabase) => {
     return res.status(400).json({ error: 'signal must be up, read, down, or down:<reason>' });
   }
 
-  await upsertSignal(supabase, user.id, postUrl, signal, weekLabel);
-
-  const all = await getAllSignals(supabase, user.id);
-  const upCount   = all.filter(s => s.signal === 'up').length;
-  const downCount = all.filter(s => s.signal === 'down' || s.signal.startsWith('down:')).length;
-
-  return res.json({ success: true, upCount, downCount });
+  try {
+    await upsertSignal(supabase, user.id, postUrl, signal, weekLabel);
+    const all = await getAllSignals(supabase, user.id);
+    const upCount   = all.filter(s => s.signal === 'up').length;
+    const downCount = all.filter(s => s.signal === 'down' || s.signal.startsWith('down:')).length;
+    return res.json({ success: true, upCount, downCount });
+  } catch (err) {
+    console.error('[signal] DB error:', err.message);
+    return res.status(500).json({ error: 'Could not save signal' });
+  }
 });
