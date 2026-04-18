@@ -1,7 +1,7 @@
 import { withAuth } from '../../lib/auth';
 import { getProfile, saveWeeklyList, getAllSignals } from '../../lib/db';
-import { rankPosts, localRankFallback, generateSearchQueries } from '../../lib/claude';
-import { discoverPosts, discoverBySearch } from '../../lib/substack-discover';
+import { rankPosts, localRankFallback, generateSearchQueries, suggestPublications } from '../../lib/claude';
+import { discoverPosts, discoverBySearch, discoverFromSuggestedPubs } from '../../lib/substack-discover';
 
 const TARGET_QUICK = 5; // quick curriculum
 const TARGET_DEEP  = 7; // deep dive — one post per angle
@@ -42,40 +42,48 @@ export default withAuth(async (req, res, user, supabase) => {
     skippedUrls = signals.filter(s => s.signal === 'down' || s.signal.startsWith('down:')).map(s => s.post_url).slice(0, 20);
   } catch { /* non-fatal */ }
 
-  // ── Step 1: Generate targeted search queries from the goal ───────────────────
+  // ── Step 1: Claude generates search queries + suggests best publications ──────
   let refinedGoal = profileText;
   let searchQueries = [];
+  let suggestedPubUrls = [];
   try {
-    const queryData = await generateSearchQueries(profileText, mode);
-    refinedGoal   = queryData.refinedGoal || profileText;
-    searchQueries = queryData.queries     || [];
-    console.log(`[generate-list] Search queries: ${searchQueries.join(' | ')}`);
+    const [queryData, pubUrls] = await Promise.all([
+      generateSearchQueries(profileText, mode),
+      suggestPublications(profileText),
+    ]);
+    refinedGoal      = queryData.refinedGoal || profileText;
+    searchQueries    = queryData.queries     || [];
+    suggestedPubUrls = pubUrls;
+    console.log(`[generate-list] Queries: ${searchQueries.join(' | ')}`);
+    console.log(`[generate-list] Suggested pubs: ${suggestedPubUrls.join(', ')}`);
   } catch (err) {
-    console.warn('[generate-list] generateSearchQueries failed:', err.message);
+    console.warn('[generate-list] Step 1 failed:', err.message);
   }
 
-  // ── Step 2: Search-based discovery (primary path) ─────────────────────────
+  // ── Step 2: PRIMARY — fetch from Claude-suggested pubs with engagement scoring
   let pool = [];
+  const profileWords = (refinedGoal || profileText).toLowerCase()
+    .replace(/[^a-z0-9 ]/g, ' ').split(/\s+/).filter(w => w.length > 3);
+
   try {
-    if (searchQueries.length > 0) {
-      pool = await discoverBySearch(searchQueries, TARGET * 8);
+    if (suggestedPubUrls.length > 0) {
+      pool = await discoverFromSuggestedPubs(suggestedPubUrls, profileWords, TARGET * 10);
     }
   } catch (err) {
-    console.warn('[generate-list] discoverBySearch failed:', err.message);
+    console.warn('[generate-list] discoverFromSuggestedPubs failed:', err.message);
   }
 
-  // ── Step 3: Category-based fallback if search yields < 10 posts ───────────
-  if (pool.length < 10) {
-    console.log(`[generate-list] Search pool thin (${pool.length}) — augmenting with category discovery`);
+  // ── Step 3: AUGMENT — category-based discovery to fill the pool ───────────
+  if (pool.length < TARGET * 3) {
+    console.log(`[generate-list] Pool thin (${pool.length}) — augmenting with category discovery`);
     try {
       const fallback = await discoverPosts(profileText, [], TARGET * 6);
-      // Merge without duplicating URLs
       const seenUrls = new Set(pool.map(p => p.url));
       for (const p of fallback) {
         if (!seenUrls.has(p.url)) { pool.push(p); seenUrls.add(p.url); }
       }
     } catch (err) {
-      console.warn('[generate-list] Category discovery fallback failed:', err.message);
+      console.warn('[generate-list] Category discovery failed:', err.message);
       if (pool.length === 0) {
         return res.status(500).json({ error: 'Could not reach Substack right now. Please try again.' });
       }
