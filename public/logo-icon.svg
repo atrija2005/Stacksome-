@@ -1,89 +1,77 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512" role="img" aria-label="Stacksome">
   <defs>
-
-    <!-- Background: warm near-black -->
-    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0%"   stop-color="#1A1410"/>
-      <stop offset="100%" stop-color="#080808"/>
+    <linearGradient id="b1g" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%"   stop-color="#BB2E00"/>
+      <stop offset="20%"  stop-color="#FF4500"/>
+      <stop offset="60%"  stop-color="#FF6719"/>
+      <stop offset="100%" stop-color="#FFB84D"/>
     </linearGradient>
-
-    <!-- Top bar gradient: electric orange → amber -->
-    <linearGradient id="topBar" x1="0" y1="0" x2="1" y2="0">
-      <stop offset="0%"   stop-color="#FF4500"/>
-      <stop offset="45%"  stop-color="#FF6719"/>
-      <stop offset="100%" stop-color="#FFAA55"/>
+    <linearGradient id="shG" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%"   stop-color="#fff" stop-opacity="0.32"/>
+      <stop offset="45%"  stop-color="#fff" stop-opacity="0.07"/>
+      <stop offset="100%" stop-color="#fff" stop-opacity="0"/>
     </linearGradient>
-
-    <!-- Subtle bar highlight (top edge catch-light) -->
-    <linearGradient id="shine" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%"  stop-color="#FFFFFF" stop-opacity="0.18"/>
-      <stop offset="100%" stop-color="#FFFFFF" stop-opacity="0"/>
-    </linearGradient>
-
-    <!-- Ambient glow behind bars -->
-    <filter id="ambientGlow" x="-60%" y="-60%" width="220%" height="220%">
-      <feGaussianBlur stdDeviation="48"/>
-    </filter>
-
-    <!-- Top-bar sharp glow -->
-    <filter id="barGlow" x="-8%" y="-80%" width="116%" height="260%">
-      <feGaussianBlur stdDeviation="6" result="blur"/>
+    <radialGradient id="bgG" cx="40%" cy="40%" r="62%">
+      <stop offset="0%"   stop-color="#261608"/>
+      <stop offset="65%"  stop-color="#0E0907"/>
+      <stop offset="100%" stop-color="#040302"/>
+    </radialGradient>
+    <radialGradient id="agG" cx="38%" cy="40%" r="50%">
+      <stop offset="0%"   stop-color="#FF6719" stop-opacity="0.28"/>
+      <stop offset="55%"  stop-color="#FF4500" stop-opacity="0.10"/>
+      <stop offset="100%" stop-color="#FF4500" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="ag2" cx="52%" cy="58%" r="58%">
+      <stop offset="0%"   stop-color="#FF5500" stop-opacity="0.13"/>
+      <stop offset="100%" stop-color="#FF5500" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="bloom" x="-10%" y="-130%" width="120%" height="360%">
+      <feGaussianBlur stdDeviation="8" result="b1"/>
+      <feGaussianBlur in="SourceGraphic" stdDeviation="3" result="b2"/>
       <feMerge>
-        <feMergeNode in="blur"/>
+        <feMergeNode in="b1"/>
+        <feMergeNode in="b1"/>
+        <feMergeNode in="b2"/>
         <feMergeNode in="SourceGraphic"/>
       </feMerge>
     </filter>
-
-    <!-- Clip to container shape -->
-    <clipPath id="clip">
-      <rect width="512" height="512" rx="108"/>
-    </clipPath>
-
-    <!-- Noise grain texture -->
-    <filter id="grain" x="0" y="0" width="100%" height="100%">
-      <feTurbulence type="fractalNoise" baseFrequency="0.68" numOctaves="4" stitchTiles="stitch" result="noise"/>
-      <feColorMatrix type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0.035 0" result="tinted"/>
-      <feComposite in="SourceGraphic" in2="tinted" operator="over"/>
+    <filter id="glow" x="-8%" y="-90%" width="116%" height="280%">
+      <feGaussianBlur stdDeviation="5" result="b"/>
+      <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
     </filter>
-
+    <filter id="sparkF" x="-300%" y="-300%" width="700%" height="700%">
+      <feGaussianBlur stdDeviation="6" result="b"/>
+      <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <filter id="grain">
+      <feTurbulence type="fractalNoise" baseFrequency="0.68" numOctaves="4" stitchTiles="stitch" result="n"/>
+      <feColorMatrix type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0.045 0" in="n" result="t"/>
+      <feComposite in="SourceGraphic" in2="t" operator="over"/>
+    </filter>
   </defs>
 
-  <g clip-path="url(#clip)">
+  <rect width="512" height="512" rx="92" fill="url(#bgG)"/>
+  <rect width="512" height="512" rx="92" fill="url(#agG)"/>
+  <rect width="512" height="512" rx="92" fill="url(#ag2)"/>
+  <rect width="512" height="512" rx="92" fill="transparent" filter="url(#grain)"/>
 
-    <!-- Background -->
-    <rect width="512" height="512" fill="url(#bg)"/>
+  <!-- Bar 1 — full gradient, double bloom -->
+  <rect x="62" y="104" width="390" height="56" rx="12" fill="url(#b1g)" filter="url(#bloom)"/>
+  <rect x="62" y="104" width="390" height="28" rx="12" fill="url(#shG)"/>
+  <!-- Bar 2 -->
+  <rect x="62" y="178" width="314" height="56" rx="12" fill="#FF6719" opacity="0.74" filter="url(#glow)"/>
+  <rect x="62" y="178" width="314" height="26" rx="12" fill="url(#shG)" opacity="0.55"/>
+  <!-- Bar 3 -->
+  <rect x="62" y="252" width="238" height="56" rx="12" fill="#FF6719" opacity="0.52"/>
+  <rect x="62" y="252" width="238" height="24" rx="12" fill="url(#shG)" opacity="0.40"/>
+  <!-- Bar 4 -->
+  <rect x="62" y="326" width="162" height="56" rx="12" fill="#FF6719" opacity="0.32"/>
+  <rect x="62" y="326" width="162" height="22" rx="12" fill="url(#shG)" opacity="0.24"/>
+  <!-- Bar 5 -->
+  <rect x="62" y="400" width="88"  height="56" rx="12" fill="#FF6719" opacity="0.15"/>
+  <rect x="62" y="400" width="88"  height="18" rx="12" fill="url(#shG)" opacity="0.14"/>
 
-    <!-- Grain overlay -->
-    <rect width="512" height="512" fill="transparent" filter="url(#grain)"/>
-
-    <!-- Ambient orange light pool -->
-    <ellipse cx="185" cy="272" rx="230" ry="160" fill="#FF6719" opacity="0.09" filter="url(#ambientGlow)"/>
-
-    <!-- ── BARS ─────────────────────────────────────── -->
-    <!-- Widths: 332 → 272 → 212 → 152 → 92  (−60 each) -->
-    <!-- Heights: 36px  Gap between: 18px  Total: 5×36+4×18=252  Start Y=(512−252)/2=130 -->
-
-    <!-- Bar 1 — top, full blaze, glow -->
-    <rect x="90" y="130" width="332" height="36" rx="10" fill="url(#topBar)" filter="url(#barGlow)"/>
-    <rect x="90" y="130" width="332" height="18" rx="10" fill="url(#shine)"/>
-
-    <!-- Bar 2 -->
-    <rect x="90" y="184" width="272" height="36" rx="10" fill="#FF6719" opacity="0.74"/>
-    <rect x="90" y="184" width="272" height="16" rx="10" fill="url(#shine)" opacity="0.55"/>
-
-    <!-- Bar 3 -->
-    <rect x="90" y="238" width="212" height="36" rx="10" fill="#FF6719" opacity="0.50"/>
-    <rect x="90" y="238" width="212" height="14" rx="10" fill="url(#shine)" opacity="0.40"/>
-
-    <!-- Bar 4 -->
-    <rect x="90" y="292" width="152" height="36" rx="10" fill="#FF6719" opacity="0.30"/>
-
-    <!-- Bar 5 — faintest trace -->
-    <rect x="90" y="346" width="92"  height="36" rx="10" fill="#FF6719" opacity="0.15"/>
-
-    <!-- ✦ spark — top right accent -->
-    <text x="418" y="152" font-family="Georgia, serif" font-size="28" font-weight="700"
-          fill="#FF6719" opacity="0.55" text-anchor="middle">✦</text>
-
-  </g>
+  <!-- Spark at right tip of bar 1 -->
+  <circle cx="458" cy="132" r="6"   fill="#FFD580" opacity="0.88" filter="url(#sparkF)"/>
+  <circle cx="458" cy="132" r="2.5" fill="#FFFFFF" opacity="0.96"/>
 </svg>

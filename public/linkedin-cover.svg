@@ -1,138 +1,156 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1584 396" width="1584" height="396" role="img" aria-label="Stacksome LinkedIn Cover">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1128 191" width="1128" height="191" role="img" aria-label="Stacksome LinkedIn Banner">
   <defs>
 
-    <!-- Background gradient: warm black, deeper on right -->
-    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0%"   stop-color="#1C1712"/>
-      <stop offset="55%"  stop-color="#0E0C0A"/>
-      <stop offset="100%" stop-color="#080808"/>
+    <linearGradient id="bgG" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%"   stop-color="#1C1008"/>
+      <stop offset="50%"  stop-color="#0C0806"/>
+      <stop offset="100%" stop-color="#040302"/>
     </linearGradient>
 
-    <!-- Bar gradient: deep orange → amber glow -->
     <linearGradient id="barG" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%"   stop-color="#BB2E00"/>
+      <stop offset="30%"  stop-color="#FF4500"/>
+      <stop offset="65%"  stop-color="#FF6719"/>
+      <stop offset="100%" stop-color="#FFB84D"/>
+    </linearGradient>
+
+    <!-- Feature bar: hard fade-in from transparent -->
+    <linearGradient id="fadeG" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%"   stop-color="#FF4500" stop-opacity="0"/>
+      <stop offset="18%"  stop-color="#FF4500" stop-opacity="1"/>
+      <stop offset="65%"  stop-color="#FF6719" stop-opacity="1"/>
+      <stop offset="100%" stop-color="#FFB84D" stop-opacity="0.75"/>
+    </linearGradient>
+
+    <linearGradient id="miniG" x1="0" y1="0" x2="1" y2="0">
       <stop offset="0%"   stop-color="#FF4500"/>
-      <stop offset="45%"  stop-color="#FF6719"/>
-      <stop offset="100%" stop-color="#FFBB66"/>
+      <stop offset="100%" stop-color="#FFAA55"/>
     </linearGradient>
 
-    <!-- Reverse gradient for ghost bars -->
-    <linearGradient id="ghostG" x1="0" y1="0" x2="1" y2="0">
-      <stop offset="0%"  stop-color="#FF6719" stop-opacity="0.0"/>
-      <stop offset="40%" stop-color="#FF6719" stop-opacity="1"/>
-      <stop offset="100%" stop-color="#FF6719" stop-opacity="0.6"/>
+    <!-- Vertical accent gradient -->
+    <linearGradient id="accentG" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%"   stop-color="#FF6719" stop-opacity="0"/>
+      <stop offset="20%"  stop-color="#FF6719" stop-opacity="0.80"/>
+      <stop offset="80%"  stop-color="#FF6719" stop-opacity="0.80"/>
+      <stop offset="100%" stop-color="#FF6719" stop-opacity="0"/>
     </linearGradient>
 
-    <!-- Catch-light: top edge shine -->
-    <linearGradient id="shine" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%"  stop-color="#fff" stop-opacity="0.22"/>
+    <linearGradient id="shG" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%"   stop-color="#fff" stop-opacity="0.28"/>
       <stop offset="100%" stop-color="#fff" stop-opacity="0"/>
     </linearGradient>
 
-    <!-- Left ambient glow -->
-    <radialGradient id="leftGlow" cx="28%" cy="50%" r="40%">
-      <stop offset="0%"   stop-color="#FF6719" stop-opacity="0.12"/>
-      <stop offset="100%" stop-color="#FF6719" stop-opacity="0"/>
+    <!-- Main ambient glow — center right -->
+    <radialGradient id="ambG" cx="71%" cy="50%" r="36%">
+      <stop offset="0%"   stop-color="#FF6719" stop-opacity="0.20"/>
+      <stop offset="50%"  stop-color="#FF4500" stop-opacity="0.08"/>
+      <stop offset="100%" stop-color="#FF4500" stop-opacity="0"/>
     </radialGradient>
 
-    <!-- Right ambient glow -->
-    <radialGradient id="rightGlow" cx="82%" cy="50%" r="38%">
+    <!-- Secondary glow far right -->
+    <radialGradient id="glR" cx="94%" cy="50%" r="18%">
+      <stop offset="0%"   stop-color="#FF8830" stop-opacity="0.14"/>
+      <stop offset="100%" stop-color="#FF8830" stop-opacity="0"/>
+    </radialGradient>
+
+    <!-- Subtle brand area glow -->
+    <radialGradient id="glL" cx="30%" cy="63%" r="24%">
       <stop offset="0%"   stop-color="#FF6719" stop-opacity="0.08"/>
       <stop offset="100%" stop-color="#FF6719" stop-opacity="0"/>
     </radialGradient>
 
-    <!-- Bar glow filter -->
-    <filter id="bGlow" x="-4%" y="-120%" width="108%" height="340%">
-      <feGaussianBlur stdDeviation="5" result="blur"/>
-      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    <!-- Bar bloom filter -->
+    <filter id="bloom" x="-4%" y="-140%" width="108%" height="380%">
+      <feGaussianBlur stdDeviation="6" result="b1"/>
+      <feGaussianBlur in="SourceGraphic" stdDeviation="2.5" result="b2"/>
+      <feMerge>
+        <feMergeNode in="b1"/>
+        <feMergeNode in="b1"/>
+        <feMergeNode in="b2"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
     </filter>
 
-    <!-- Soft blur for ghost bars -->
-    <filter id="softBlur" x="-2%" y="-20%" width="104%" height="140%">
-      <feGaussianBlur stdDeviation="1.5"/>
+    <filter id="softB" x="-4%" y="-90%" width="108%" height="280%">
+      <feGaussianBlur stdDeviation="4" result="b"/>
+      <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
     </filter>
 
-    <!-- Grain texture -->
     <filter id="grain">
-      <feTurbulence type="fractalNoise" baseFrequency="0.70" numOctaves="4" stitchTiles="stitch" result="n"/>
-      <feColorMatrix type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0.028 0" result="t"/>
+      <feTurbulence type="fractalNoise" baseFrequency="0.72" numOctaves="4" stitchTiles="stitch" result="n"/>
+      <feColorMatrix type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0.035 0" in="n" result="t"/>
       <feComposite in="SourceGraphic" in2="t" operator="over"/>
     </filter>
 
-    <!-- Divider line gradient -->
-    <linearGradient id="lineG" x1="0" y1="0" x2="1" y2="0">
-      <stop offset="0%"   stop-color="#FF6719" stop-opacity="0"/>
-      <stop offset="30%"  stop-color="#FF6719" stop-opacity="0.5"/>
-      <stop offset="70%"  stop-color="#FF6719" stop-opacity="0.5"/>
-      <stop offset="100%" stop-color="#FF6719" stop-opacity="0"/>
-    </linearGradient>
+    <pattern id="dots" x="0" y="0" width="22" height="22" patternUnits="userSpaceOnUse">
+      <circle cx="11" cy="11" r="0.7" fill="#FF6719" opacity="0.14"/>
+    </pattern>
 
   </defs>
 
-  <!-- ── BACKGROUND ─────────────────────────────────── -->
-  <rect width="1584" height="396" fill="url(#bg)"/>
-  <rect width="1584" height="396" fill="url(#leftGlow)"/>
-  <rect width="1584" height="396" fill="url(#rightGlow)"/>
-  <rect width="1584" height="396" fill="transparent" filter="url(#grain)"/>
+  <!-- ── BACKGROUND ── -->
+  <rect width="1128" height="191" fill="url(#bgG)"/>
+  <rect width="1128" height="191" fill="url(#dots)"/>
+  <rect width="1128" height="191" fill="url(#ambG)"/>
+  <rect width="1128" height="191" fill="url(#glR)"/>
+  <rect width="1128" height="191" fill="url(#glL)"/>
+  <rect width="1128" height="191" fill="transparent" filter="url(#grain)"/>
 
-  <!-- ── GHOST BARS (full-width background pattern, very low opacity) -->
-  <!-- These span the entire width, creating a subtle stacked texture -->
-  <rect x="0" y="38"  width="1584" height="44" rx="0" fill="#FF6719" opacity="0.028"/>
-  <rect x="0" y="113" width="1584" height="44" rx="0" fill="#FF6719" opacity="0.022"/>
-  <rect x="0" y="188" width="1584" height="44" rx="0" fill="#FF6719" opacity="0.018"/>
-  <rect x="0" y="263" width="1584" height="44" rx="0" fill="#FF6719" opacity="0.013"/>
-  <rect x="0" y="338" width="1584" height="44" rx="0" fill="#FF6719" opacity="0.009"/>
+  <!-- Subtle horizontal guide lines -->
+  <line x1="0" y1="63.7"  x2="1128" y2="63.7"  stroke="#FF6719" stroke-width="0.5" opacity="0.055"/>
+  <line x1="0" y1="127.3" x2="1128" y2="127.3" stroke="#FF6719" stroke-width="0.5" opacity="0.038"/>
 
-  <!-- ── FEATURE BARS (right side, full-height decorative, high contrast) -->
-  <!-- Bars fade in from ~x=900, anchored right, with glowing top bar -->
+  <!-- ── FEATURE BARS — right side, staggered cascade ── -->
 
-  <!-- Bar 1 — top, electric glow -->
-  <rect x="860" y="38" width="644" height="44" rx="12" fill="url(#ghostG)" filter="url(#bGlow)" opacity="0.90"/>
-  <rect x="860" y="38" width="644" height="20" rx="12" fill="url(#shine)" opacity="0.9"/>
+  <!-- Bar 1 — top, primary glow bar -->
+  <rect x="548" y="11"  width="580" height="32" rx="9" fill="url(#fadeG)" filter="url(#bloom)" opacity="0.97"/>
+  <rect x="548" y="11"  width="580" height="15" rx="9" fill="url(#shG)"/>
 
   <!-- Bar 2 -->
-  <rect x="936" y="113" width="568" height="44" rx="12" fill="#FF6719" opacity="0.52"/>
-  <rect x="936" y="113" width="568" height="18" rx="12" fill="url(#shine)" opacity="0.45"/>
+  <rect x="594" y="53"  width="534" height="28" rx="8" fill="#FF6719" opacity="0.57" filter="url(#softB)"/>
+  <rect x="594" y="53"  width="534" height="13" rx="8" fill="url(#shG)" opacity="0.44"/>
 
-  <!-- Bar 3 -->
-  <rect x="1012" y="188" width="492" height="44" rx="12" fill="#FF6719" opacity="0.34"/>
-  <rect x="1012" y="188" width="492" height="15" rx="12" fill="url(#shine)" opacity="0.30"/>
+  <!-- Bar 3 — center -->
+  <rect x="641" y="95"  width="487" height="26" rx="7" fill="#FF6719" opacity="0.37"/>
+  <rect x="641" y="95"  width="487" height="12" rx="7" fill="url(#shG)" opacity="0.28"/>
 
   <!-- Bar 4 -->
-  <rect x="1090" y="263" width="414" height="44" rx="12" fill="#FF6719" opacity="0.20"/>
+  <rect x="688" y="135" width="440" height="22" rx="6" fill="#FF6719" opacity="0.20"/>
+  <rect x="688" y="135" width="440" height="10" rx="6" fill="url(#shG)" opacity="0.16"/>
 
-  <!-- Bar 5 — faintest trace -->
-  <rect x="1168" y="338" width="336" height="44" rx="12" fill="#FF6719" opacity="0.10"/>
+  <!-- Bar 5 — faintest -->
+  <rect x="735" y="160" width="393" height="17" rx="5" fill="#FF6719" opacity="0.10"/>
 
-  <!-- ── VERTICAL SEPARATOR ─────────────────────────── -->
-  <line x1="0" y1="395" x2="1584" y2="395" stroke="url(#lineG)" stroke-width="1.5"/>
+  <!-- ── VERTICAL ACCENT LINE ── -->
+  <rect x="315" y="20" width="2" height="151" rx="1" fill="url(#accentG)"/>
 
-  <!-- ── LEFT CONTENT AREA ──────────────────────────── -->
+  <!-- ── CONTENT — safe zone x=328+ ── -->
 
-  <!-- Small icon mark: 3 mini bars stacked -->
-  <rect x="96" y="128" width="48" height="8"  rx="3" fill="url(#barG)" opacity="1.0"/>
-  <rect x="96" y="143" width="38" height="8"  rx="3" fill="#FF6719"    opacity="0.70"/>
-  <rect x="96" y="158" width="28" height="8"  rx="3" fill="#FF6719"    opacity="0.40"/>
+  <!-- Mini icon: 3 bars -->
+  <rect x="330" y="40" width="32" height="8" rx="2.5" fill="url(#miniG)"/>
+  <rect x="330" y="54" width="25" height="8" rx="2.5" fill="#FF6719" opacity="0.68"/>
+  <rect x="330" y="68" width="16" height="8" rx="2.5" fill="#FF6719" opacity="0.36"/>
 
-  <!-- Wordmark: "stack" white + "some" orange -->
-  <text x="96" y="237"
+  <!-- "stacksome" wordmark -->
+  <text x="330" y="119"
         font-family="Georgia, 'Times New Roman', serif"
-        font-size="88" font-weight="700" letter-spacing="-3">
+        font-size="44" font-weight="700" letter-spacing="-1.5">
     <tspan fill="#FFFFFF">stack</tspan><tspan fill="#FF6719">some</tspan>
   </text>
 
   <!-- Tagline -->
-  <text x="100" y="273"
+  <text x="332" y="140"
         font-family="Arial, Helvetica, sans-serif"
-        font-size="13.5" font-weight="400" letter-spacing="0.16em"
-        fill="rgba(255,255,255,0.35)">PERSONAL SUBSTACK INTELLIGENCE</text>
+        font-size="10" letter-spacing="0.20em"
+        fill="rgba(255,255,255,0.28)">PERSONAL SUBSTACK INTELLIGENCE</text>
 
-  <!-- Subtle orange dot accent -->
-  <circle cx="80" cy="237" r="4" fill="#FF6719" opacity="0.6"/>
+  <!-- Rule below tagline -->
+  <line x1="332" y1="150" x2="572" y2="150" stroke="rgba(255,255,255,0.10)" stroke-width="0.75"/>
 
-  <!-- ── BUILDER CREDIT (bottom right) ─────────────── -->
-  <text x="1484" y="370"
+  <!-- URL bottom right -->
+  <text x="1112" y="181"
         font-family="Arial, Helvetica, sans-serif"
-        font-size="11" letter-spacing="0.08em"
+        font-size="9.5" letter-spacing="0.06em"
         fill="rgba(255,255,255,0.18)"
         text-anchor="end">stacksome.vercel.app</text>
 
