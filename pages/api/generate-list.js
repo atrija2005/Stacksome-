@@ -1,7 +1,7 @@
 import { withAuth } from '../../lib/auth';
 import { getProfile, saveWeeklyList, getAllSignals } from '../../lib/db';
-import { rankPosts, localRankFallback, generateSearchQueries, suggestPublications } from '../../lib/claude';
-import { discoverPosts, discoverBySearch, discoverFromSuggestedPubs } from '../../lib/substack-discover';
+import { rankPosts, localRankFallback, generateSearchQueries, suggestPublications, suggestSpecificPosts, enrichAndFilterPool } from '../../lib/claude';
+import { discoverPosts, discoverFromSuggestedPubs } from '../../lib/substack-discover';
 
 const TARGET_QUICK = 5; // quick curriculum
 const TARGET_DEEP  = 7; // deep dive — one post per angle
@@ -16,7 +16,7 @@ function getWeekLabel() {
 export default withAuth(async (req, res, user, supabase) => {
   if (req.method !== 'POST') return res.status(405).end();
 
-  const { excludeUrls = [], interests: bodyInterests, mode = 'quick' } = req.body || {};
+  const { excludeUrls = [], interests: bodyInterests, mode = 'quick', preferredPubs = [] } = req.body || {};
   const TARGET = mode === 'deep' ? TARGET_DEEP : TARGET_QUICK;
 
   // Load profile — wrapped so a missing table doesn't crash everything
@@ -42,9 +42,8 @@ export default withAuth(async (req, res, user, supabase) => {
     skippedUrls = signals.filter(s => s.signal === 'down' || s.signal.startsWith('down:')).map(s => s.post_url).slice(0, 20);
   } catch { /* non-fatal */ }
 
-  // ── Step 1: Claude generates search queries + suggests best publications ──────
+  // ── Step 1: Claude generates refined goal + suggests best publications ────────
   let refinedGoal = profileText;
-  let searchQueries = [];
   let suggestedPubUrls = [];
   try {
     const [queryData, pubUrls] = await Promise.all([
@@ -52,30 +51,53 @@ export default withAuth(async (req, res, user, supabase) => {
       suggestPublications(profileText),
     ]);
     refinedGoal      = queryData.refinedGoal || profileText;
-    searchQueries    = queryData.queries     || [];
     suggestedPubUrls = pubUrls;
-    console.log(`[generate-list] Queries: ${searchQueries.join(' | ')}`);
     console.log(`[generate-list] Suggested pubs: ${suggestedPubUrls.join(', ')}`);
   } catch (err) {
     console.warn('[generate-list] Step 1 failed:', err.message);
   }
 
-  // ── Step 2: PRIMARY — fetch from Claude-suggested pubs with engagement scoring
-  let pool = [];
   const profileWords = (refinedGoal || profileText).toLowerCase()
     .replace(/[^a-z0-9 ]/g, ' ').split(/\s+/).filter(w => w.length > 3);
 
+  // ── Step 2: PRIMARY — Claude directly names specific posts it knows about ──
+  let pool = [];
   try {
-    if (suggestedPubUrls.length > 0) {
-      pool = await discoverFromSuggestedPubs(suggestedPubUrls, profileWords, TARGET * 10);
-    }
+    const claudePosts = await suggestSpecificPosts(refinedGoal || profileText, mode);
+    pool = claudePosts; // no HEAD-check — enrichAndFilterPool handles real verification
+    console.log(`[generate-list] Claude-suggested: ${pool.length} posts (pending enrichment)`);
   } catch (err) {
-    console.warn('[generate-list] discoverFromSuggestedPubs failed:', err.message);
+    console.warn('[generate-list] suggestSpecificPosts failed:', err.message);
   }
 
-  // ── Step 3: AUGMENT — category-based discovery to fill the pool ───────────
-  if (pool.length < TARGET * 3) {
-    console.log(`[generate-list] Pool thin (${pool.length}) — augmenting with category discovery`);
+  // ── Step 3: AUGMENT — pub-based discovery to fill the pool ────────────────
+  if (pool.length < TARGET * 2) {
+    console.log(`[generate-list] Pool thin (${pool.length}) — augmenting with pub discovery`);
+    try {
+      if (suggestedPubUrls.length > 0) {
+        const pubPosts = await discoverFromSuggestedPubs(suggestedPubUrls, profileWords, TARGET * 8);
+        const seenUrls = new Set(pool.map(p => p.url));
+        for (const p of pubPosts) {
+          if (!seenUrls.has(p.url)) { pool.push(p); seenUrls.add(p.url); }
+        }
+        console.log(`[generate-list] After pub augment: ${pool.length} posts`);
+      }
+    } catch (err) {
+      console.warn('[generate-list] discoverFromSuggestedPubs failed:', err.message);
+    }
+  }
+
+  // ── Step 3b: ENRICH + FILTER — scrape bodies, score semantically ──────────
+  try {
+    pool = await enrichAndFilterPool(pool, refinedGoal || profileText);
+    console.log(`[generate-list] After semantic filter: ${pool.length} posts`);
+  } catch (err) {
+    console.warn('[generate-list] enrichAndFilterPool failed:', err.message);
+  }
+
+  // ── Step 4: FALLBACK — category-based discovery if pool still thin ─────────
+  if (pool.length < TARGET * 2) {
+    console.log(`[generate-list] Pool still thin (${pool.length}) — falling back to category discovery`);
     try {
       const fallback = await discoverPosts(profileText, [], TARGET * 6);
       const seenUrls = new Set(pool.map(p => p.url));
@@ -101,7 +123,8 @@ export default withAuth(async (req, res, user, supabase) => {
   // Rank — Claude first, then local fallback, then raw score sort
   let ranked = [];
   try {
-    ranked = await rankPosts(pool, refinedGoal || profileText, likedUrls, skippedUrls, [], { count: TARGET, mode });
+    ranked = (await rankPosts(pool, refinedGoal || profileText, likedUrls, skippedUrls, [], { count: TARGET, mode, preferredPubs }))
+      .map(p => ({ ...p, section: p.section || 'discover' }));
   } catch (err) {
     console.warn('[generate-list] Claude ranking failed:', err.message);
     try {
@@ -122,6 +145,8 @@ export default withAuth(async (req, res, user, supabase) => {
       .slice(0, TARGET)
       .map(p => ({ ...p, section: 'discover', type: 'core', why: 'Matched to your interests.' }));
   }
+
+  ranked = ranked.filter(p => p.url && p.title);
 
   // Save to DB — wrapped so a missing table doesn't crash the response
   try {

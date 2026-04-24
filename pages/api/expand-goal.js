@@ -18,21 +18,12 @@ export default withAuth(async (req, res, user, supabase) => {
   try {
     const data = await generateSearchQueries(goal.trim(), mode);
 
-    // Derive 3–4 bullet points from the queries for the confirmation UI
-    // Each query becomes a short "I'll cover X" phrase
-    const bullets = (data.queries || [])
-      .slice(0, 4)
-      .map(q => {
-        // Capitalise first letter
-        return q.charAt(0).toUpperCase() + q.slice(1);
-      });
-
     return res.json({
       success:     true,
       refinedGoal: data.refinedGoal,
       summary:     data.summary,
       queries:     data.queries,
-      bullets,
+      bullets:     data.bullets || [],
       mode,
     });
   } catch (err) {

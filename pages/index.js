@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter } from 'next/router';
 import Layout from '../components/Layout';
 import LandingPage from '../components/LandingPage';
@@ -12,33 +12,167 @@ const C = {
   rule: '#ECEAE6', ink: '#0A0A0A',
 };
 
-/* ── Topic chips ─────────────────────────────────────────────────────────── */
-const TOPICS = [
-  'AI', 'Startups', 'Technology', 'Product', 'Design',
-  'Investing', 'Markets', 'FinTech', 'Economics', 'Crypto',
-  'Philosophy', 'Science', 'History', 'Psychology', 'Politics',
-  'Writing', 'Books', 'Culture',
-  'Health', 'Longevity', 'Mental Health',
-  'Geopolitics', 'Climate', 'Energy',
-  'Business', 'Leadership', 'Marketing', 'Venture Capital',
-  'Education', 'Productivity', 'Parenting',
+/* ── Vibes (replaces old TOPICS — 6 evocative phrases, not category labels) ── */
+const VIBES = [
+  { id: 'money',    label: 'how money actually works',  hint: 'Finance · investing · macro' },
+  { id: 'tech',     label: 'building things from scratch', hint: 'AI · software · platforms' },
+  { id: 'startups', label: 'zero to something real',    hint: 'Founders · VC · product' },
+  { id: 'ideas',    label: 'thinking from first principles', hint: 'Philosophy · science · progress' },
+  { id: 'power',    label: 'who actually runs things',  hint: 'Politics · geopolitics · media' },
+  { id: 'self',     label: 'becoming who you want to be', hint: 'Psychology · health · craft' },
 ];
 
-function ChipPicker({ selected, onToggle }) {
+/* ── Hand-curated starter stacks per vibe ────────────────────────────────── */
+const STARTER_STACKS = {
+  money: [
+    { name: 'The Diff',      url: 'https://thediff.co',               author: 'Byrne Hobart',    desc: 'Finance, strategy, and complexity theory — long-form, worth your Sunday.' },
+    { name: 'Net Interest',  url: 'https://netinterest.co',           author: 'Marc Rubinstein', desc: 'The smartest breakdown of financial businesses you\'ll find anywhere.' },
+    { name: 'Noahpinion',    url: 'https://noahpinion.substack.com',  author: 'Noah Smith',      desc: 'An economist who actually changes your mind about things.' },
+    { name: 'Kyla Scanlon',  url: 'https://kylascanlon.substack.com', author: 'Kyla Scanlon',    desc: 'Coined "vibecession." Makes macro feel like something you can feel, not just model.' },
+  ],
+  tech: [
+    { name: 'Stratechery',            url: 'https://stratechery.com',                  author: 'Ben Thompson',   desc: 'The gold standard for understanding why tech companies make the moves they make.' },
+    { name: 'The Pragmatic Engineer', url: 'https://newsletter.pragmaticengineer.com', author: 'Gergely Orosz', desc: 'What it\'s actually like to be an engineer at FAANG — not the LinkedIn version.' },
+    { name: 'Platformer',             url: 'https://www.platformer.news',              author: 'Casey Newton',   desc: 'Inside scoop on the social platforms that run the internet.' },
+    { name: 'One Useful Thing',       url: 'https://www.oneusefulthing.org',           author: 'Ethan Mollick',  desc: 'A Wharton professor figuring out AI in real time — the most honest take on what it changes.' },
+  ],
+  startups: [
+    { name: "Lenny's Newsletter", url: 'https://www.lennysnewsletter.com', author: 'Lenny Rachitsky', desc: 'The PM playbook everyone at Airbnb, Notion, and Uber actually reads. Shockingly practical.' },
+    { name: 'Every',              url: 'https://every.to',                 author: 'Every Team',      desc: 'Smart operators writing about building companies and using AI to do it.' },
+    { name: 'Not Boring',         url: 'https://www.notboring.co',         author: 'Packy McCormick', desc: 'Makes you feel like the most interesting companies are narratives worth understanding.' },
+    { name: 'SaaStr',             url: 'https://www.saastr.com',           author: 'Jason Lemkin',    desc: 'No-fluff SaaS numbers — what it actually takes to go from $1M to $100M ARR.' },
+  ],
+  ideas: [
+    { name: 'Astral Codex Ten',  url: 'https://www.astralcodexten.com',      author: 'Scott Alexander', desc: 'The most careful thinker on the internet. Every post changes something small about how you see the world.' },
+    { name: 'Works in Progress', url: 'https://worksinprogress.co',          author: 'Various',         desc: 'The anti-doom take — why things are getting better and how to keep them going.' },
+    { name: 'Rob Henderson',     url: 'https://robkhenderson.substack.com',  author: 'Rob Henderson',   desc: 'Turns social science into uncomfortable but undeniable observations about how we live.' },
+    { name: 'Dwarkesh Patel',    url: 'https://www.dwarkeshpatel.com',       author: 'Dwarkesh Patel',  desc: '3-hour conversations with the people building and theorising the future. No small talk.' },
+  ],
+  power: [
+    { name: 'Tangle',           url: 'https://www.readtangle.com', author: 'Isaac Saul',  desc: 'Actually reads both sides before writing — helps you understand what the other side believes.' },
+    { name: 'GZERO World',      url: 'https://www.gzeromedia.com', author: 'Ian Bremmer', desc: 'Geopolitics without the agenda, from the firm that predicted Russia\'s Ukraine invasion.' },
+    { name: 'Puck',             url: 'https://puck.news',          author: 'Various',     desc: 'Gossip about power — told by people who are actually in the rooms.' },
+    { name: 'War on the Rocks', url: 'https://warontherocks.com',  author: 'Various',     desc: 'Written by generals and operatives. What national security actually looks like.' },
+  ],
+  self: [
+    { name: 'Cal Newport',  url: 'https://calnewport.substack.com', author: 'Cal Newport',         desc: 'The original case for doing one thing deeply. Every post builds the same argument, and it lands.' },
+    { name: 'Ness Labs',    url: 'https://nesslabs.com',            author: 'Anne-Laure Le Cunff', desc: 'Combines neuroscience and psychology to make getting smarter feel actually achievable.' },
+    { name: 'David Perell', url: 'https://perell.com',              author: 'David Perell',        desc: 'The "write online" guy — but read him for his ideas about learning and craft, not just writing.' },
+    { name: 'Dynomight',    url: 'https://dynomight.net',           author: 'Dynomight',           desc: 'Wears its uncertainty honestly. Covers diet science to life advice, better than most specialists.' },
+  ],
+};
+
+function getStarterPubs(vibeIds) {
+  const seen = new Set();
+  const result = [];
+  for (const id of vibeIds) {
+    for (const pub of (STARTER_STACKS[id] || [])) {
+      if (!seen.has(pub.name)) { seen.add(pub.name); result.push(pub); }
+    }
+  }
+  return result.slice(0, 8);
+}
+
+/* ── Passive behaviour tracking ──────────────────────────────────────────── */
+
+// Starter stack interactions → sessionStorage (cleared on tab close)
+function trackPubInteraction(pubName, eventType) {
+  try {
+    const key = 'ss_starter_behavior';
+    const events = JSON.parse(sessionStorage.getItem(key) || '[]');
+    events.push({ pubName, eventType, t: Date.now() });
+    sessionStorage.setItem(key, JSON.stringify(events.slice(-50)));
+  } catch { /* silent */ }
+}
+
+// Feed behavior → localStorage (persists, used for smarter future lists)
+// Written by PostCard (expand, dwell, click events)
+function getTopFeedPubs(n = 5) {
+  try {
+    const events = JSON.parse(localStorage.getItem('ss_feed_behavior') || '[]');
+    if (!events.length) return [];
+    const counts = {};
+    for (const e of events) {
+      if (!e.pubName) continue;
+      const w = e.eventType === 'click' ? 3 : e.eventType === 'expand' ? 2 : 1;
+      counts[e.pubName] = (counts[e.pubName] || 0) + w;
+    }
+    return Object.entries(counts)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, n)
+      .map(([name]) => name);
+  } catch { return []; }
+}
+
+// Check both starter-stack clicks AND feed behavior to find best keep-or-swap candidate
+function getTopInteractedPub(currentPubs = []) {
+  try {
+    // 1. Starter-stack interactions (session)
+    const starterEvents = JSON.parse(sessionStorage.getItem('ss_starter_behavior') || '[]');
+    const counts = {};
+    for (const e of starterEvents) {
+      const w = e.eventType === 'click' ? 3 : 1;
+      counts[e.pubName] = (counts[e.pubName] || 0) + w;
+    }
+    // 2. Feed dwell/expand signals (localStorage)
+    const feedEvents = JSON.parse(localStorage.getItem('ss_feed_behavior') || '[]');
+    for (const e of feedEvents) {
+      if (!e.pubName) continue;
+      const w = e.eventType === 'click' ? 3 : e.eventType === 'expand' ? 2 : 1;
+      counts[e.pubName] = (counts[e.pubName] || 0) + w;
+    }
+    if (!Object.keys(counts).length) return null;
+    // Filter out pubs already well-represented in current feed
+    const currentLower = currentPubs.map(p => p.toLowerCase());
+    const entries = Object.entries(counts)
+      .filter(([name]) => !currentLower.some(c => c.includes(name.toLowerCase())))
+      .sort((a, b) => b[1] - a[1]);
+    return entries[0]?.[0] || null;
+  } catch { return null; }
+}
+
+function findPubByName(name) {
+  for (const pubs of Object.values(STARTER_STACKS)) {
+    const found = pubs.find(p => p.name === name);
+    if (found) return found;
+  }
+  return null;
+}
+
+/* ── VibePicker ──────────────────────────────────────────────────────────── */
+function VibePicker({ selected, onToggle }) {
   return (
-    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '.4rem' }}>
-      {TOPICS.map(t => {
-        const on = selected.includes(t);
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '.35rem' }}>
+      {VIBES.map(v => {
+        const on = selected.includes(v.id);
         return (
-          <button key={t} type="button" onClick={() => onToggle(t)} style={{
-            fontFamily: 'var(--font-body)', fontSize: '.72rem', fontWeight: on ? 700 : 500,
-            padding: '6px 13px', borderRadius: 99,
-            border: `1.5px solid ${on ? C.orange : '#E0DDD8'}`,
-            background: on ? C.orange : 'transparent',
-            color: on ? '#fff' : '#777',
-            cursor: 'pointer', transition: 'all .14s', whiteSpace: 'nowrap', lineHeight: 1,
-          }}>
-            {t}
+          <button
+            key={v.id}
+            type="button"
+            onClick={() => onToggle(v.id)}
+            style={{
+              fontFamily: 'var(--font-body)',
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+              padding: '10px 14px', borderRadius: 10, textAlign: 'left',
+              border: `1.5px solid ${on ? C.orange : '#E0DDD8'}`,
+              background: on ? '#FFF3EC' : '#FAFAF8',
+              cursor: 'pointer', transition: 'all .13s',
+              gap: '.75rem',
+            }}
+          >
+            <span style={{
+              fontSize: '.88rem', fontWeight: on ? 700 : 500,
+              color: on ? C.orange : '#444',
+            }}>
+              {v.label}
+            </span>
+            <span style={{
+              fontSize: '.6rem', fontWeight: 500, letterSpacing: '.04em',
+              color: on ? '#c94a00' : '#bbb',
+              whiteSpace: 'nowrap', flexShrink: 0,
+            }}>
+              {on ? '✓' : v.hint}
+            </span>
           </button>
         );
       })}
@@ -46,12 +180,103 @@ function ChipPicker({ selected, onToggle }) {
   );
 }
 
-/* Combine chips + free text into a clear goal string for Claude */
-function buildGoal(chips, text) {
-  const c = chips.join(', ');
+/* ── IntentPicker ────────────────────────────────────────────────────────── */
+function IntentPicker({ value, onChange }) {
+  const opts = [
+    { id: 'discover', label: 'Discover new voices' },
+    { id: 'keep-up',  label: 'Keep up with the best' },
+    { id: 'both',     label: 'Both' },
+  ];
+  return (
+    <div>
+      <p style={{
+        fontFamily: 'var(--font-body)', fontSize: '.6rem', fontWeight: 800,
+        letterSpacing: '.12em', textTransform: 'uppercase',
+        color: '#ccc', marginBottom: '.5rem',
+      }}>What are you here for?</p>
+      <div style={{ display: 'flex', gap: '.5rem', flexWrap: 'wrap' }}>
+        {opts.map(o => {
+          const on = value === o.id;
+          return (
+            <button
+              key={o.id}
+              type="button"
+              onClick={() => onChange(o.id)}
+              style={{
+                fontFamily: 'var(--font-body)', fontSize: '.78rem',
+                fontWeight: on ? 700 : 500,
+                padding: '7px 14px', borderRadius: 8,
+                border: `1.5px solid ${on ? C.orange : '#E0DDD8'}`,
+                background: on ? '#FFF3EC' : '#fff',
+                color: on ? C.orange : '#666',
+                cursor: 'pointer', transition: 'all .13s',
+              }}
+            >
+              {o.label}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+/* ── StarterPubCard ──────────────────────────────────────────────────────── */
+function StarterPubCard({ pub, onInteract }) {
+  const [hov, setHov] = useState(false);
+  return (
+    <a
+      href={pub.url}
+      target="_blank"
+      rel="noopener noreferrer"
+      onClick={() => onInteract(pub.name, 'click')}
+      onMouseEnter={() => { setHov(true); onInteract(pub.name, 'hover'); }}
+      onMouseLeave={() => setHov(false)}
+      style={{
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        padding: '.65rem .9rem', borderRadius: 9, gap: '.75rem',
+        border: `1px solid ${hov ? '#d4cfc9' : '#ECEAE6'}`,
+        background: hov ? '#FAFAF8' : '#fff',
+        transition: 'all .15s',
+        textDecoration: 'none', cursor: 'pointer',
+      }}
+    >
+      <div style={{ minWidth: 0 }}>
+        <p style={{
+          fontFamily: 'var(--font-body)', fontSize: '.84rem', fontWeight: 700,
+          color: '#0a0a0a', margin: 0,
+        }}>
+          {pub.name}
+        </p>
+        <p style={{
+          fontFamily: 'var(--font-body)', fontSize: '.71rem', color: '#888',
+          margin: '.1rem 0 0', lineHeight: 1.4,
+        }}>
+          {pub.author} · {pub.desc}
+        </p>
+      </div>
+      <span style={{
+        fontFamily: 'var(--font-body)', fontSize: '.7rem', fontWeight: 700,
+        color: hov ? C.orange : '#bbb',
+        whiteSpace: 'nowrap', flexShrink: 0,
+        transition: 'color .15s',
+      }}>
+        Visit →
+      </span>
+    </a>
+  );
+}
+
+/* ── Combine vibes + free text + intent into a goal string for Claude ─────── */
+function buildGoal(chips, text, intent) {
+  const vibeLabels = chips.map(id => VIBES.find(v => v.id === id)?.label || id).join(', ');
   const t = text.trim();
-  if (c && t) return `Topics: ${c}. Goal: ${t}`;
-  return c || t;
+  const intentNote =
+    intent === 'discover' ? ' Focus on discovering lesser-known voices.'
+    : intent === 'keep-up' ? ' Prioritise established, top-rated newsletters.'
+    : '';
+  if (vibeLabels && t) return `Interests: ${vibeLabels}. Goal: ${t}.${intentNote}`;
+  return (vibeLabels || t) + intentNote;
 }
 
 /* ── Angle styles (deep dive) ────────────────────────────────────────────── */
@@ -285,19 +510,26 @@ export default function Home() {
   // ── Onboarding / form ─────────────────────────────────────────────────
   const [selectedChips, setSelectedChips] = useState([]);
   const [freeText,      setFreeText]      = useState('');
-  // Combined goal sent to Claude — chips + free text both respected
-  const interestInput = buildGoal(selectedChips, freeText);
+  const [intent,        setIntent]        = useState('both'); // 'discover' | 'keep-up' | 'both'
+  const interestInput = buildGoal(selectedChips, freeText, intent);
   const [buildingFirst, setBuildingFirst] = useState(false);
   const [buildPhase,    setBuildPhase]    = useState('');
   const [showNewForm,   setShowNewForm]   = useState(false);
   const [diveMode,      setDiveMode]      = useState('quick'); // 'quick' | 'deep'
 
   // ── Goal confirmation ─────────────────────────────────────────────────
-  const [confirmData,  setConfirmData]  = useState(null);  // { refinedGoal, summary, bullets, queries }
+  const [confirmData,  setConfirmData]  = useState(null);
   const [confirming,   setConfirming]   = useState(false);
 
   // ── Curriculum completion ─────────────────────────────────────────────
-  const [ctxRatings, setCtxRatings] = useState({});  // { [ctxId]: 'perfect' | 'mostly' | 'miss' }
+  const [ctxRatings, setCtxRatings] = useState({});
+
+  // ── Keep-or-swap prompt ───────────────────────────────────────────────
+  // null = not yet evaluated · { pubName, pubUrl } = show banner · 'dismissed' = hidden
+  const [keepOrSwap, setKeepOrSwap] = useState(null);
+
+  // ── In-flight guard ────────────────────────────────────────────────────
+  const buildingFirstRef = useRef(false);
 
   // ── Generation state ──────────────────────────────────────────────────
   const [generating,  setGenning]    = useState(false);
@@ -322,7 +554,6 @@ export default function Home() {
       setActiveCtxId(lastId && saved.find(c => c.id === lastId) ? lastId : (saved[0]?.id || null));
     } catch { /* ignore */ }
     setLoading(false);
-    // Check for interests stored before OAuth redirect (from landing page hero input)
     const pending = sessionStorage.getItem('ss_pending_interests');
     if (pending) {
       setFreeText(pending);
@@ -332,6 +563,20 @@ export default function Home() {
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, authLoading]);
+
+  // ── Keep-or-swap: check behaviour after first list loads ──────────────
+  useEffect(() => {
+    if (keepOrSwap !== null) return; // already evaluated
+    const activeCtx = contexts.find(c => c.id === activeCtxId);
+    const posts = activeCtx?.posts || [];
+    if (!posts.length) return;
+    const currentPubNames = posts.map(p => p.publication_name || '').filter(Boolean);
+    const topPub = getTopInteractedPub(currentPubNames);
+    if (!topPub) return;
+    const pub = findPubByName(topPub);
+    if (pub) setKeepOrSwap({ pubName: topPub, pubUrl: pub.url });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeCtxId, contexts]);
 
   // ── Persistence helpers ───────────────────────────────────────────────
   function persistContexts(ctxs) {
@@ -344,6 +589,7 @@ export default function Home() {
     localStorage.setItem('ss_active_ctx', id);
     setActiveTopic(null);
     setShowNewForm(false);
+    setKeepOrSwap(null); // re-evaluate for new context
   }
 
   function saveNewContext(interests, posts, mode = 'quick') {
@@ -405,7 +651,6 @@ export default function Home() {
 
   // ── Build / generate helpers ──────────────────────────────────────────
 
-  // Step 1 of 2: Expand the goal → show confirmation card
   async function handleGoalSubmit() {
     const interests = interestInput.trim();
     if (!interests || confirming) return;
@@ -424,17 +669,16 @@ export default function Home() {
         queries:      data.queries     || [],
       });
     } catch {
-      // If expand-goal fails, skip confirmation and build directly
       await handleBuildFirst(interests);
     } finally {
       setConfirming(false);
     }
   }
 
-  // Step 2 of 2: Build the curriculum using confirmed goal
   async function handleBuildFirst(goalOverride) {
     const interests = goalOverride || confirmData?.refinedGoal || interestInput.trim();
-    if (!interests || buildingFirst) return;
+    if (!interests || buildingFirstRef.current) return;
+    buildingFirstRef.current = true;
     setConfirmData(null);
     setBuildingFirst(true);
     setBuildPhase('Saving your interests…');
@@ -452,14 +696,16 @@ export default function Home() {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ interests, mode: diveMode }),
       })).json();
-      if (d.error) { toast(d.error, 'error'); setBuildingFirst(false); setBuildPhase(''); return; }
+      if (d.error) { toast(d.error, 'error'); buildingFirstRef.current = false; setBuildingFirst(false); setBuildPhase(''); return; }
       saveNewContext(interests, d.posts || [], diveMode);
-      setSelectedChips([]); setFreeText('');
+      setSelectedChips([]); setFreeText(''); setIntent('both');
       setShowNewForm(false);
+      setKeepOrSwap(null); // will re-evaluate on next render
       router.replace('/', undefined, { shallow: true });
     } catch {
       toast('Something went wrong — try again', 'error');
     }
+    buildingFirstRef.current = false;
     setBuildingFirst(false);
     setBuildPhase('');
   }
@@ -468,9 +714,10 @@ export default function Home() {
     const ctx = contexts.find(c => c.id === ctxId);
     if (!ctx) return false;
     try {
+      const preferredPubs = getTopFeedPubs(5);
       const d = await (await fetch('/api/generate-list', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ interests: ctx.interests, excludeUrls, mode: ctx.mode || 'quick' }),
+        body: JSON.stringify({ interests: ctx.interests, excludeUrls, mode: ctx.mode || 'quick', preferredPubs }),
       })).json();
       if (d.error) { toast(d.error, 'error'); return false; }
       updateContextInPlace(ctxId, { posts: d.posts || [] });
@@ -510,11 +757,12 @@ export default function Home() {
     );
   }
 
-  // No user → show landing page
   if (!user) return <LandingPage />;
 
-  // No contexts yet OR landing page redirected with start=1
   const showOnboarding = contexts.length === 0 || forceStart || showNewForm || buildingFirst;
+
+  // Starter pubs derived from selected chips
+  const starterPubs = getStarterPubs(selectedChips);
 
   return (
     <Layout>
@@ -584,17 +832,17 @@ export default function Home() {
                   }}>Here's what I'll build</p>
                 </div>
 
-                {confirmData.summary && (
+                {(confirmData.summary || confirmData.refinedGoal) && (
                   <p style={{
                     fontFamily: 'var(--font-display)', fontVariationSettings: "'opsz' 18",
                     fontSize: '1.05rem', fontWeight: 700, color: '#0a0a0a',
                     lineHeight: 1.4, marginBottom: '.9rem',
                   }}>
-                    {confirmData.summary}
+                    {confirmData.summary || `A reading curriculum on: ${confirmData.refinedGoal}`}
                   </p>
                 )}
 
-                {confirmData.bullets.length > 0 && (
+                {(confirmData.bullets || []).length > 0 && (
                   <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 1.25rem', display: 'flex', flexDirection: 'column', gap: '.4rem' }}>
                     {confirmData.bullets.map((b, i) => (
                       <li key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: '.5rem' }}>
@@ -638,23 +886,31 @@ export default function Home() {
               </div>
             )}
 
-            {/* Interest input */}
+            {/* ── Main interest form ─────────────────────────────────── */}
             {!buildingFirst && !confirmData && (
               <>
-                <div style={{ textAlign: 'center', marginBottom: '1.75rem' }}>
-                  {showNewForm && contexts.length > 0 && (
-                    <button
-                      onClick={() => { setShowNewForm(false); setSelectedChips([]); setFreeText(''); }}
-                      style={{
-                        fontFamily: 'var(--font-body)', fontSize: '.75rem',
-                        color: '#bbb', background: 'none', border: 'none',
-                        cursor: 'pointer', display: 'block', margin: '0 auto 1.25rem',
-                      }}
-                    >
-                      ← Back
-                    </button>
-                  )}
+                {/* Back button */}
+                {showNewForm && contexts.length > 0 && (
+                  <button
+                    onClick={() => {
+                      setShowNewForm(false);
+                      setSelectedChips([]);
+                      setFreeText('');
+                      setIntent('both');
+                      router.replace('/', undefined, { shallow: true });
+                    }}
+                    style={{
+                      fontFamily: 'var(--font-body)', fontSize: '.75rem',
+                      color: '#bbb', background: 'none', border: 'none',
+                      cursor: 'pointer', display: 'block', marginBottom: '1.25rem',
+                    }}
+                  >
+                    ← Back
+                  </button>
+                )}
 
+                {/* Header */}
+                <div style={{ textAlign: 'center', marginBottom: '1.75rem' }}>
                   <div style={{
                     width: 48, height: 48, borderRadius: 12,
                     background: C.orange, margin: '0 auto 1.25rem',
@@ -668,57 +924,77 @@ export default function Home() {
                     fontSize: 'clamp(1.5rem,4vw,2rem)', fontWeight: 900,
                     color: '#0a0a0a', marginBottom: '.5rem',
                   }}>
-                    {showNewForm ? 'New topic' : 'What do you want to go deep on?'}
+                    {showNewForm ? 'New topic' : 'What are you into?'}
                   </h2>
                   <p style={{
                     fontFamily: 'var(--font-body)', fontSize: '.85rem',
-                    color: C.muted, lineHeight: 1.65, marginBottom: '1.5rem',
+                    color: C.muted, lineHeight: 1.65,
                   }}>
-                    Prep for an internship, write a sector thesis, or just go all in on a topic.
+                    Pick what resonates. Claude builds the reading list.
                   </p>
-
-                  {/* Mode toggle */}
-                  <div style={{ display: 'flex', gap: '.6rem', justifyContent: 'center' }}>
-                    {[
-                      { id: 'quick', label: 'Quick read', sub: '5 posts · ordered path', icon: '→' },
-                      { id: 'deep',  label: 'Deep dive',  sub: '7 posts · every angle',  icon: '⬛' },
-                    ].map(m => {
-                      const on = diveMode === m.id;
-                      return (
-                        <button key={m.id} onClick={() => setDiveMode(m.id)} style={{
-                          fontFamily: 'var(--font-body)', textAlign: 'left',
-                          padding: '10px 16px', borderRadius: 10, cursor: 'pointer',
-                          border: `2px solid ${on ? C.orange : '#E0DDD8'}`,
-                          background: on ? '#FFF3EC' : '#fff',
-                          transition: 'all .15s', minWidth: 130,
-                        }}>
-                          <div style={{ fontSize: '.72rem', fontWeight: 800, color: on ? C.orange : '#888', marginBottom: '.2rem' }}>
-                            {m.icon} {m.label}
-                          </div>
-                          <div style={{ fontSize: '.65rem', color: on ? '#c94a00' : '#bbb', fontWeight: 500 }}>
-                            {m.sub}
-                          </div>
-                        </button>
-                      );
-                    })}
-                  </div>
                 </div>
 
-                {/* Chip picker */}
-                <div style={{ marginBottom: '.9rem' }}>
+                {/* Vibe chips */}
+                <div style={{ marginBottom: '1.1rem' }}>
                   <p style={{
                     fontFamily: 'var(--font-body)', fontSize: '.6rem', fontWeight: 800,
                     letterSpacing: '.12em', textTransform: 'uppercase',
                     color: '#ccc', marginBottom: '.55rem',
-                  }}>Tap topics</p>
-                  <ChipPicker
+                  }}>
+                    Pick your vibes
+                  </p>
+                  <VibePicker
                     selected={selectedChips}
-                    onToggle={t => setSelectedChips(prev =>
-                      prev.includes(t) ? prev.filter(c => c !== t) : [...prev, t]
+                    onToggle={id => setSelectedChips(prev =>
+                      prev.includes(id) ? prev.filter(c => c !== id) : [...prev, id]
                     )}
                   />
                 </div>
 
+                {/* Intent + starter stack — shown once a vibe is selected */}
+                {selectedChips.length > 0 && (
+                  <div className="anim-fade-in-up" style={{ marginBottom: '1.1rem' }}>
+                    {/* Intent picker */}
+                    <div style={{ marginBottom: '1.1rem' }}>
+                      <IntentPicker value={intent} onChange={setIntent} />
+                    </div>
+
+                    {/* Starter stack preview */}
+                    <div>
+                      <div style={{
+                        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                        marginBottom: '.5rem',
+                      }}>
+                        <p style={{
+                          fontFamily: 'var(--font-body)', fontSize: '.6rem', fontWeight: 800,
+                          letterSpacing: '.12em', textTransform: 'uppercase', color: '#ccc', margin: 0,
+                        }}>
+                          Your starter stack
+                        </p>
+                        <span style={{ fontFamily: 'var(--font-body)', fontSize: '.62rem', color: '#bbb' }}>
+                          hand-curated
+                        </span>
+                      </div>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '.35rem' }}>
+                        {starterPubs.map(pub => (
+                          <StarterPubCard
+                            key={pub.name}
+                            pub={pub}
+                            onInteract={trackPubInteraction}
+                          />
+                        ))}
+                      </div>
+                      <p style={{
+                        fontFamily: 'var(--font-body)', fontSize: '.68rem',
+                        color: '#bbb', marginTop: '.65rem', textAlign: 'center',
+                      }}>
+                        Claude picks the best posts from these and more.
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Divider */}
                 <div style={{ display: 'flex', alignItems: 'center', gap: '.75rem', margin: '.9rem 0' }}>
                   <div style={{ flex: 1, height: 1, background: '#e8e5e0' }} />
                   <span style={{ fontFamily: 'var(--font-body)', fontSize: '.62rem', color: '#ccc', letterSpacing: '.06em' }}>
@@ -727,6 +1003,7 @@ export default function Home() {
                   <div style={{ flex: 1, height: 1, background: '#e8e5e0' }} />
                 </div>
 
+                {/* Free text */}
                 <textarea
                   value={freeText}
                   onChange={e => setFreeText(e.target.value)}
@@ -749,6 +1026,33 @@ export default function Home() {
                   }}
                 />
 
+                {/* Mode toggle */}
+                <div style={{ display: 'flex', gap: '.6rem', marginBottom: '1rem' }}>
+                  {[
+                    { id: 'quick', label: 'Quick read', sub: '5 posts · ordered path', icon: '→' },
+                    { id: 'deep',  label: 'Deep dive',  sub: '7 posts · every angle',  icon: '⬛' },
+                  ].map(m => {
+                    const on = diveMode === m.id;
+                    return (
+                      <button key={m.id} onClick={() => setDiveMode(m.id)} style={{
+                        fontFamily: 'var(--font-body)', textAlign: 'left', flex: 1,
+                        padding: '10px 16px', borderRadius: 10, cursor: 'pointer',
+                        border: `2px solid ${on ? C.orange : '#E0DDD8'}`,
+                        background: on ? '#FFF3EC' : '#fff',
+                        transition: 'all .15s',
+                      }}>
+                        <div style={{ fontSize: '.72rem', fontWeight: 800, color: on ? C.orange : '#888', marginBottom: '.2rem' }}>
+                          {m.icon} {m.label}
+                        </div>
+                        <div style={{ fontSize: '.65rem', color: on ? '#c94a00' : '#bbb', fontWeight: 500 }}>
+                          {m.sub}
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* Submit */}
                 <button
                   onClick={handleGoalSubmit}
                   disabled={!interestInput.trim() || confirming}
@@ -799,13 +1103,60 @@ export default function Home() {
               readPct={readPct}
             />
 
+            {/* ── Keep-or-swap banner ─────────────────────────────────── */}
+            {keepOrSwap && keepOrSwap !== 'dismissed' && (
+              <div className="anim-fade-in-up" style={{
+                marginBottom: '1.25rem',
+                padding: '.8rem 1rem',
+                borderRadius: 10,
+                background: '#FFF3EC',
+                border: '1.5px solid #FFD4BC',
+                display: 'flex', alignItems: 'center',
+                justifyContent: 'space-between', gap: '1rem', flexWrap: 'wrap',
+              }}>
+                <p style={{ fontFamily: 'var(--font-body)', fontSize: '.8rem', color: '#555', margin: 0 }}>
+                  You explored{' '}
+                  <strong style={{ color: C.orange }}>{keepOrSwap.pubName}</strong>
+                  {' '}— want it in your reading list?
+                </p>
+                <div style={{ display: 'flex', gap: '.5rem', flexShrink: 0 }}>
+                  <button
+                    onClick={() => {
+                      setKeepOrSwap('dismissed');
+                      setFreeText(keepOrSwap.pubName);
+                      setShowNewForm(true);
+                    }}
+                    style={{
+                      fontFamily: 'var(--font-body)', fontSize: '.75rem', fontWeight: 700,
+                      padding: '5px 14px', borderRadius: 7,
+                      background: C.orange, color: '#fff',
+                      border: 'none', cursor: 'pointer',
+                    }}
+                  >
+                    Add it
+                  </button>
+                  <button
+                    onClick={() => setKeepOrSwap('dismissed')}
+                    style={{
+                      fontFamily: 'var(--font-body)', fontSize: '.75rem',
+                      padding: '5px 11px', borderRadius: 7,
+                      background: 'transparent', color: '#aaa',
+                      border: '1.5px solid #E0DDD8', cursor: 'pointer',
+                    }}
+                  >
+                    No thanks
+                  </button>
+                </div>
+              </div>
+            )}
+
             {/* Context tabs */}
             <ContextTabs
               contexts={contexts}
               activeId={activeCtxId}
               onSwitch={switchContext}
               onDelete={deleteContext}
-              onNew={() => { setShowNewForm(true); setSelectedChips([]); setFreeText(''); }}
+              onNew={() => { setShowNewForm(true); setSelectedChips([]); setFreeText(''); setIntent('both'); }}
             />
 
             {/* Toolbar */}
@@ -945,7 +1296,6 @@ export default function Home() {
                   borderRadius: 14, overflow: 'hidden',
                   border: '1.5px solid #D1FAE5',
                 }}>
-                  {/* Green header */}
                   <div style={{
                     background: 'linear-gradient(135deg, #064E3B 0%, #047857 100%)',
                     padding: '1.25rem 1.5rem',
@@ -970,9 +1320,7 @@ export default function Home() {
                     </div>
                   </div>
 
-                  {/* Body */}
                   <div style={{ background: '#F0FDF4', padding: '1.1rem 1.5rem' }}>
-                    {/* Rating */}
                     {!rating && (
                       <>
                         <p style={{
@@ -1018,7 +1366,6 @@ export default function Home() {
                       </p>
                     )}
 
-                    {/* Next level CTA */}
                     <div style={{
                       borderTop: '1px solid #BBF7D0', paddingTop: '.9rem',
                       display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem', flexWrap: 'wrap',

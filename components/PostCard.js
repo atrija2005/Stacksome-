@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useToast } from './Toast';
 
 const ANGLE_STYLES = {
@@ -18,6 +18,19 @@ const SECTION_STYLES = {
 };
 
 const REFINE_MILESTONES = new Set([5, 10, 20, 35]);
+
+// ── Passive behaviour tracking ────────────────────────────────────────────
+// Writes to localStorage so it survives across sessions and can inform
+// future list generation and keep-or-swap suggestions.
+function trackFeedEvent(postUrl, pubName, eventType, extra = {}) {
+  try {
+    const key = 'ss_feed_behavior';
+    const events = JSON.parse(localStorage.getItem(key) || '[]');
+    events.push({ postUrl, pubName, eventType, t: Date.now(), ...extra });
+    // Keep last 200 events, trimmed from the front
+    localStorage.setItem(key, JSON.stringify(events.slice(-200)));
+  } catch { /* silent — never crash for analytics */ }
+}
 
 function truncate(s, n) {
   if (!s) return '';
@@ -40,11 +53,34 @@ export default function PostCard({ post, index, weekLabel, initialSignals = {}, 
   const [tldrOpen, setTldrOpen] = useState(false);
   const [showDownReason, setShowDownReason] = useState(false);
 
+  // ── Dwell-time tracking ───────────────────────────────────────────────
+  const hoverStartRef = useRef(null);
+  const dwellFiredRef = useRef(false); // only fire once per card mount
+
+  const pubName = post.publication_name || post.publication || '';
+
+  function handleMouseEnter() {
+    setHovered(true);
+    hoverStartRef.current = Date.now();
+  }
+
+  function handleMouseLeave() {
+    setHovered(false);
+    if (hoverStartRef.current) {
+      const duration = Date.now() - hoverStartRef.current;
+      hoverStartRef.current = null;
+      // 4 s+ dwell on a card = genuine interest
+      if (duration >= 4000 && !dwellFiredRef.current) {
+        dwellFiredRef.current = true;
+        trackFeedEvent(post.url, pubName, 'dwell', { durationMs: duration });
+      }
+    }
+  }
+
   const s      = (post.angle && ANGLE_STYLES[post.angle]) || SECTION_STYLES[post.section] || SECTION_STYLES[post.type] || SECTION_STYLES.discover;
   const isRead = !!signals.read;
   const excerpt = truncate(post.description, 180);
   const date    = formatDate(post.published_at);
-  const pubName = post.publication_name || post.publication || '';
 
   async function sendSignal(sig) {
     if (readOnly || loading) return;
@@ -58,7 +94,6 @@ export default function PostCard({ post, index, weekLabel, initialSignals = {}, 
       const data = await res.json();
       setSignals(prev => {
         const n = { ...prev };
-        // Strip old up/down before setting new one (but keep typed reasons)
         const baseSignal = sig.split(':')[0];
         if (baseSignal === 'up' || baseSignal === 'down') { delete n.up; delete n.down; delete n['down:off-topic']; delete n['down:too-basic']; delete n['down:know-it']; }
         n[sig] = true;
@@ -80,11 +115,25 @@ export default function PostCard({ post, index, weekLabel, initialSignals = {}, 
     } catch { /* silent */ }
   }
 
+  function handleTldrToggle() {
+    const opening = !tldrOpen;
+    setTldrOpen(opening);
+    if (opening) {
+      // Expanding the TL;DR = strong interest signal
+      trackFeedEvent(post.url, pubName, 'expand');
+    }
+  }
+
+  function handleTitleClick() {
+    trackFeedEvent(post.url, pubName, 'click');
+    if (!isRead) sendSignal('read');
+  }
+
   return (
     <article
       className="anim-fade-in-up"
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
       style={{
         display: 'grid',
         gridTemplateColumns: '56px 1fr',
@@ -134,7 +183,6 @@ export default function PostCard({ post, index, weekLabel, initialSignals = {}, 
 
         {/* Top meta row */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '.5rem', marginBottom: '.65rem', flexWrap: 'wrap' }}>
-          {/* Section badge */}
           <span style={{
             fontFamily: 'var(--font-body)', fontSize: '.6rem', fontWeight: 800,
             letterSpacing: '.1em', textTransform: 'uppercase',
@@ -146,7 +194,6 @@ export default function PostCard({ post, index, weekLabel, initialSignals = {}, 
             {post.angle || s.label || 'Curated'}
           </span>
 
-          {/* Publication name — most important meta */}
           {pubName && (
             <span style={{
               fontFamily: 'var(--font-body)', fontSize: '.78rem', fontWeight: 700,
@@ -185,7 +232,7 @@ export default function PostCard({ post, index, weekLabel, initialSignals = {}, 
         {/* Title */}
         <a
           href={post.url} target="_blank" rel="noopener noreferrer"
-          onClick={() => !isRead && sendSignal('read')}
+          onClick={handleTitleClick}
           style={{
             display: 'block', marginBottom: excerpt ? '.5rem' : '.7rem',
             fontFamily: 'var(--font-display)',
@@ -202,11 +249,11 @@ export default function PostCard({ post, index, weekLabel, initialSignals = {}, 
           {post.title}
         </a>
 
-        {/* TL;DR — expandable quick take */}
+        {/* TL;DR — expandable quick take, tracked as 'expand' */}
         {post.tldr && (
           <div style={{ marginBottom: '.6rem' }}>
             <button
-              onClick={() => setTldrOpen(o => !o)}
+              onClick={handleTldrToggle}
               style={{
                 display: 'inline-flex', alignItems: 'center', gap: '.3rem',
                 fontFamily: 'var(--font-body)', fontSize: '.65rem', fontWeight: 700,
@@ -349,7 +396,6 @@ export default function PostCard({ post, index, weekLabel, initialSignals = {}, 
                 ▼
               </button>
 
-              {/* Reason chips */}
               {showDownReason && (
                 <>
                   {[
@@ -381,7 +427,7 @@ export default function PostCard({ post, index, weekLabel, initialSignals = {}, 
 
             <a
               href={post.url} target="_blank" rel="noopener noreferrer"
-              onClick={() => !isRead && sendSignal('read')}
+              onClick={handleTitleClick}
               style={{
                 marginLeft: 'auto',
                 fontFamily: 'var(--font-body)', fontSize: '.72rem', fontWeight: 700,
