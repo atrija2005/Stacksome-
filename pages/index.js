@@ -12,14 +12,18 @@ const C = {
   rule: '#ECEAE6', ink: '#0A0A0A',
 };
 
-/* ── Vibes (replaces old TOPICS — 6 evocative phrases, not category labels) ── */
-const VIBES = [
-  { id: 'money',    label: 'how money actually works',  hint: 'Finance · investing · macro' },
-  { id: 'tech',     label: 'building things from scratch', hint: 'AI · software · platforms' },
-  { id: 'startups', label: 'zero to something real',    hint: 'Founders · VC · product' },
-  { id: 'ideas',    label: 'thinking from first principles', hint: 'Philosophy · science · progress' },
-  { id: 'power',    label: 'who actually runs things',  hint: 'Politics · geopolitics · media' },
-  { id: 'self',     label: 'becoming who you want to be', hint: 'Psychology · health · craft' },
+/* ── Topics (10 broad categories, same as landing page) ─────────────────── */
+const TOPICS = [
+  'Technology & AI',
+  'Finance & Investing',
+  'Startups & Venture',
+  'Science & Progress',
+  'Policy & Power',
+  'Business & Strategy',
+  'Health & Medicine',
+  'Ideas & Philosophy',
+  'Culture & Society',
+  'Climate & Energy',
 ];
 
 /* ── Hand-curated starter stacks per vibe ────────────────────────────────── */
@@ -267,16 +271,12 @@ function StarterPubCard({ pub, onInteract }) {
   );
 }
 
-/* ── Combine vibes + free text + intent into a goal string for Claude ─────── */
-function buildGoal(chips, text, intent) {
-  const vibeLabels = chips.map(id => VIBES.find(v => v.id === id)?.label || id).join(', ');
+/* ── Combine topics + free text into a goal string for Claude ─────────────── */
+function buildGoal(chips, text) {
+  const topicStr = chips.join(', ');
   const t = text.trim();
-  const intentNote =
-    intent === 'discover' ? ' Focus on discovering lesser-known voices.'
-    : intent === 'keep-up' ? ' Prioritise established, top-rated newsletters.'
-    : '';
-  if (vibeLabels && t) return `Interests: ${vibeLabels}. Goal: ${t}.${intentNote}`;
-  return (vibeLabels || t) + intentNote;
+  if (topicStr && t) return `Interests: ${topicStr}. Goal: ${t}.`;
+  return topicStr || t;
 }
 
 /* ── Angle styles (deep dive) ────────────────────────────────────────────── */
@@ -510,8 +510,7 @@ export default function Home() {
   // ── Onboarding / form ─────────────────────────────────────────────────
   const [selectedChips, setSelectedChips] = useState([]);
   const [freeText,      setFreeText]      = useState('');
-  const [intent,        setIntent]        = useState('both'); // 'discover' | 'keep-up' | 'both'
-  const interestInput = buildGoal(selectedChips, freeText, intent);
+  const interestInput = buildGoal(selectedChips, freeText);
   const [buildingFirst, setBuildingFirst] = useState(false);
   const [buildPhase,    setBuildPhase]    = useState('');
   const [showNewForm,   setShowNewForm]   = useState(false);
@@ -698,7 +697,7 @@ export default function Home() {
       })).json();
       if (d.error) { toast(d.error, 'error'); buildingFirstRef.current = false; setBuildingFirst(false); setBuildPhase(''); return; }
       saveNewContext(interests, d.posts || [], diveMode);
-      setSelectedChips([]); setFreeText(''); setIntent('both');
+      setSelectedChips([]); setFreeText('');
       setShowNewForm(false);
       setKeepOrSwap(null); // will re-evaluate on next render
       router.replace('/', undefined, { shallow: true });
@@ -762,7 +761,6 @@ export default function Home() {
   const showOnboarding = contexts.length === 0 || forceStart || showNewForm || buildingFirst;
 
   // Starter pubs derived from selected chips
-  const starterPubs = getStarterPubs(selectedChips);
 
   return (
     <Layout>
@@ -896,7 +894,6 @@ export default function Home() {
                       setShowNewForm(false);
                       setSelectedChips([]);
                       setFreeText('');
-                      setIntent('both');
                       router.replace('/', undefined, { shallow: true });
                     }}
                     style={{
@@ -934,65 +931,42 @@ export default function Home() {
                   </p>
                 </div>
 
-                {/* Vibe chips */}
+                {/* Topic chips */}
                 <div style={{ marginBottom: '1.1rem' }}>
                   <p style={{
                     fontFamily: 'var(--font-body)', fontSize: '.6rem', fontWeight: 800,
                     letterSpacing: '.12em', textTransform: 'uppercase',
-                    color: '#ccc', marginBottom: '.55rem',
+                    color: '#ccc', marginBottom: '.65rem',
                   }}>
-                    Pick your vibes
+                    Pick your topics
                   </p>
-                  <VibePicker
-                    selected={selectedChips}
-                    onToggle={id => setSelectedChips(prev =>
-                      prev.includes(id) ? prev.filter(c => c !== id) : [...prev, id]
-                    )}
-                  />
-                </div>
-
-                {/* Intent + starter stack — shown once a vibe is selected */}
-                {selectedChips.length > 0 && (
-                  <div className="anim-fade-in-up" style={{ marginBottom: '1.1rem' }}>
-                    {/* Intent picker */}
-                    <div style={{ marginBottom: '1.1rem' }}>
-                      <IntentPicker value={intent} onChange={setIntent} />
-                    </div>
-
-                    {/* Starter stack preview */}
-                    <div>
-                      <div style={{
-                        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                        marginBottom: '.5rem',
-                      }}>
-                        <p style={{
-                          fontFamily: 'var(--font-body)', fontSize: '.6rem', fontWeight: 800,
-                          letterSpacing: '.12em', textTransform: 'uppercase', color: '#ccc', margin: 0,
-                        }}>
-                          Your starter stack
-                        </p>
-                        <span style={{ fontFamily: 'var(--font-body)', fontSize: '.62rem', color: '#bbb' }}>
-                          hand-curated
-                        </span>
-                      </div>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '.35rem' }}>
-                        {starterPubs.map(pub => (
-                          <StarterPubCard
-                            key={pub.name}
-                            pub={pub}
-                            onInteract={trackPubInteraction}
-                          />
-                        ))}
-                      </div>
-                      <p style={{
-                        fontFamily: 'var(--font-body)', fontSize: '.68rem',
-                        color: '#bbb', marginTop: '.65rem', textAlign: 'center',
-                      }}>
-                        Claude picks the best posts from these and more.
-                      </p>
-                    </div>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '.4rem' }}>
+                    {TOPICS.map(t => {
+                      const on = selectedChips.includes(t);
+                      return (
+                        <button
+                          key={t}
+                          type="button"
+                          onClick={() => setSelectedChips(prev =>
+                            prev.includes(t) ? prev.filter(c => c !== t) : [...prev, t]
+                          )}
+                          style={{
+                            fontFamily: 'var(--font-body)', fontSize: '.78rem',
+                            fontWeight: on ? 700 : 500,
+                            padding: '7px 14px', borderRadius: 99,
+                            border: `1.5px solid ${on ? C.orange : '#E0DDD8'}`,
+                            background: on ? '#FFF3EC' : 'transparent',
+                            color: on ? C.orange : '#666',
+                            cursor: 'pointer', transition: 'all .13s',
+                            whiteSpace: 'nowrap',
+                          }}
+                        >
+                          {on && <span style={{ marginRight: 4 }}>✓</span>}{t}
+                        </button>
+                      );
+                    })}
                   </div>
-                )}
+                </div>
 
                 {/* Divider */}
                 <div style={{ display: 'flex', alignItems: 'center', gap: '.75rem', margin: '.9rem 0' }}>
@@ -1156,7 +1130,7 @@ export default function Home() {
               activeId={activeCtxId}
               onSwitch={switchContext}
               onDelete={deleteContext}
-              onNew={() => { setShowNewForm(true); setSelectedChips([]); setFreeText(''); setIntent('both'); }}
+              onNew={() => { setShowNewForm(true); setSelectedChips([]); setFreeText(''); }}
             />
 
             {/* Toolbar */}
