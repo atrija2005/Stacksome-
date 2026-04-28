@@ -17,19 +17,31 @@ export default async function handler(req, res) {
 
   // Ensure a profile row exists for this user (upsert — safe to re-run)
   const userId = data?.user?.id;
+  let isNewUser = false;
   if (userId) {
     try {
       const service = createServiceClient();
-      await service
+
+      // Check if profile already has interests (returning user)
+      const { data: existing } = await service
         .from('profile')
-        .upsert(
-          { user_id: userId, interests: '', updated_at: new Date().toISOString() },
-          { onConflict: 'user_id', ignoreDuplicates: true }
-        );
+        .select('interests')
+        .eq('user_id', userId)
+        .single();
+
+      if (!existing) {
+        // Brand new — insert profile row and mark as new
+        await service.from('profile').insert({
+          user_id: userId, interests: '', updated_at: new Date().toISOString(),
+        });
+        isNewUser = true;
+      } else {
+        isNewUser = !existing.interests?.trim();
+      }
     } catch (err) {
       console.warn('[auth/callback] Could not upsert profile row:', err.message);
     }
   }
 
-  return res.redirect('/');
+  return res.redirect(isNewUser ? '/setup' : '/');
 }
