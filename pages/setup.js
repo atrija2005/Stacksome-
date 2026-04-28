@@ -117,6 +117,36 @@ export default function Setup() {
     }
   }, [step]);
 
+  // Auto-skip Step 1 if user came from the landing page with a pre-selected token
+  useEffect(() => {
+    const pending = sessionStorage.getItem('ss_pending_interests');
+    if (pending?.trim()) {
+      sessionStorage.removeItem('ss_pending_interests');
+      setInput(pending.trim());
+      // Small delay so state settles before the API call
+      setTimeout(async () => {
+        setThinking(true);
+        try {
+          const res  = await fetch('/api/onboard', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ input: pending.trim() }),
+          });
+          const data = await res.json();
+          if (!data.success) throw new Error('Failed');
+          setProfile(data.profile);
+          setTopics(data.topics || []);
+          setSubOptions(data.sub_options || {});
+          setSummary(data.summary || '');
+          setStep(2);
+        } catch {
+          // fall through to Step 1 so user can still type
+        } finally {
+          setThinking(false);
+        }
+      }, 80);
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
   /* ── Step 1 → 2: Claude interprets ───────────────────────────────────── */
   async function handleInterpret() {
     if (!input.trim() || thinking) return;

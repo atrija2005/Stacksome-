@@ -76,14 +76,16 @@ function MockCard({ type, title, pub, why, delay }) {
 
 /* ── Topics ──────────────────────────────────────────────────────────────── */
 const TOPICS = [
-  'AI', 'Startups', 'Technology', 'Product', 'Design',
-  'Investing', 'Markets', 'FinTech', 'Economics', 'Crypto',
-  'Philosophy', 'Science', 'History', 'Psychology', 'Politics',
-  'Writing', 'Books', 'Culture',
-  'Health', 'Longevity', 'Mental Health',
-  'Geopolitics', 'Climate', 'Energy',
-  'Business', 'Leadership', 'Marketing', 'Venture Capital',
-  'Education', 'Productivity', 'Parenting',
+  'Technology & AI',
+  'Finance & Investing',
+  'Startups & Venture',
+  'Science & Progress',
+  'Policy & Power',
+  'Business & Strategy',
+  'Health & Medicine',
+  'Ideas & Philosophy',
+  'Culture & Society',
+  'Climate & Energy',
 ];
 
 function buildGoal(chips, text) {
