@@ -70,18 +70,16 @@ export default withAuth(async (req, res, user, supabase) => {
     console.warn('[generate-list] suggestSpecificPosts failed:', err.message);
   }
 
-  // ── Step 3: AUGMENT — pub-based discovery to fill the pool ────────────────
-  if (pool.length < TARGET * 2) {
-    console.log(`[generate-list] Pool thin (${pool.length}) — augmenting with pub discovery`);
+  // ── Step 3: AUGMENT — always fetch real posts from real publications ────────
+  // Run unconditionally: real Substack posts are more reliable than Claude-suggested URLs
+  if (suggestedPubUrls.length > 0) {
     try {
-      if (suggestedPubUrls.length > 0) {
-        const pubPosts = await discoverFromSuggestedPubs(suggestedPubUrls, profileWords, TARGET * 8);
-        const seenUrls = new Set(pool.map(p => p.url));
-        for (const p of pubPosts) {
-          if (!seenUrls.has(p.url)) { pool.push(p); seenUrls.add(p.url); }
-        }
-        console.log(`[generate-list] After pub augment: ${pool.length} posts`);
+      const pubPosts = await discoverFromSuggestedPubs(suggestedPubUrls, profileWords, TARGET * 8);
+      const seenUrls = new Set(pool.map(p => p.url));
+      for (const p of pubPosts) {
+        if (!seenUrls.has(p.url)) { pool.push(p); seenUrls.add(p.url); }
       }
+      console.log(`[generate-list] After pub augment: ${pool.length} posts`);
     } catch (err) {
       console.warn('[generate-list] discoverFromSuggestedPubs failed:', err.message);
     }
