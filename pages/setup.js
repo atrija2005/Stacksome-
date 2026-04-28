@@ -5,9 +5,9 @@ import { useToast } from '../components/Toast';
 const C = {
   orange: '#FF6719', orangeLight: '#FFF3EC',
   ink: '#0a0a0a', muted: '#777', rule: '#E8E6E2', soft: '#FAFAF8',
+  red: '#E53E3E', redLight: '#FFF5F5',
 };
 
-/* ── Thinking dots animation ──────────────────────────────────────────────── */
 function ThinkingDots() {
   return (
     <span style={{ display: 'inline-flex', gap: 4, alignItems: 'center' }}>
@@ -28,8 +28,7 @@ function ThinkingDots() {
   );
 }
 
-/* ── Progress dots ────────────────────────────────────────────────────────── */
-function Steps({ current, total = 3 }) {
+function Steps({ current, total = 4 }) {
   return (
     <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: '2.5rem' }}>
       {Array.from({ length: total }).map((_, i) => (
@@ -44,56 +43,62 @@ function Steps({ current, total = 3 }) {
   );
 }
 
-/* ── Resonance card — "does this resonate?" ───────────────────────────────── */
-function PromptCard({ text, selected, onClick }) {
+/* ── Skeleton card for loading state ─────────────────────────────────────── */
+function StackSkeleton() {
   return (
-    <button
-      onClick={onClick}
-      style={{
-        display: 'block', width: '100%', textAlign: 'left',
-        padding: '14px 18px', borderRadius: 10,
-        border: `1.5px solid ${selected ? C.orange : C.rule}`,
-        background: selected ? C.orangeLight : '#fff',
-        fontFamily: 'var(--font-display)', fontVariationSettings: "'opsz' 18",
-        fontSize: 'clamp(.88rem, 2vw, .98rem)', fontWeight: selected ? 700 : 500,
-        color: selected ? C.orange : '#333',
-        cursor: 'pointer', transition: 'all .15s',
-        lineHeight: 1.4,
-        boxShadow: selected ? `0 0 0 1px ${C.orange}` : 'none',
-      }}
-    >
-      <span style={{ marginRight: 8, opacity: selected ? 1 : .3 }}>
-        {selected ? '✓' : '○'}
-      </span>
-      {text}
-    </button>
+    <div style={{
+      border: `1.5px solid ${C.rule}`, borderRadius: 12,
+      padding: '1.25rem', background: '#fff',
+    }}>
+      {[80, 55, 90, 70, 60].map((w, i) => (
+        <div key={i} style={{
+          height: i === 0 ? 16 : 12,
+          width: `${w}%`,
+          borderRadius: 4,
+          background: C.rule,
+          marginBottom: i === 0 ? 12 : 8,
+          animation: 'shimmer 1.4s ease-in-out infinite',
+          animationDelay: `${i * 0.1}s`,
+        }} />
+      ))}
+      <style>{`
+        @keyframes shimmer {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0.45; }
+        }
+      `}</style>
+    </div>
   );
 }
 
-/* ══════════════════════════════════════════════════════════════════════════ */
 export default function Setup() {
   const router = useRouter();
   const toast  = useToast();
   const textareaRef = useRef(null);
 
-  /* ── State ────────────────────────────────────────────────────────────── */
-  const [step,        setStep]       = useState(1);
-  const [input,       setInput]      = useState('');
-  const [thinking,    setThinking]   = useState(false);
+  const [step,       setStep]      = useState(1);
+  const [input,      setInput]     = useState('');
+  const [thinking,   setThinking]  = useState(false);
 
-  // Claude's interpretation
-  const [profile,     setProfile]    = useState('');
-  const [topics,      setTopics]     = useState([]);
-  const [prompts,     setPrompts]    = useState([]);
-  const [summary,     setSummary]    = useState('');
-  const [selected,    setSelected]   = useState(new Set());
+  // Step 2 state
+  const [profile,         setProfile]        = useState('');
+  const [topics,          setTopics]         = useState([]);
+  const [subOptions,      setSubOptions]     = useState({});  // { topic: [phrase, ...] }
+  const [openTopics,      setOpenTopics]     = useState(new Set()); // which chips are expanded
+  const [selectedSubs,    setSelectedSubs]   = useState({});  // { topic: Set<string> }
+  const [summary,         setSummary]        = useState('');
 
-  // Publications
-  const [pubInput,    setPubInput]   = useState('');
-  const [pubLoading,  setPubLoading] = useState(false);
-  const [publications, setPublications] = useState([]);
-  const [suggestions,  setSuggestions]  = useState([]);
-  const [addingUrl,    setAddingUrl]    = useState(null);
+  // Step 3 state
+  const [stacks,       setStacks]      = useState([]);
+  const [stacksLoading, setStacksLoading] = useState(false);
+  const [stackVotes,   setStackVotes]   = useState({});  // { id: 'up' | 'down' }
+
+  // Step 4 (publications)
+  const [pubInput,      setPubInput]    = useState('');
+  const [pubLoading,    setPubLoading]  = useState(false);
+  const [publications,  setPublications] = useState([]);
+  const [suggestions,   setSuggestions]  = useState([]);
+  const [addingUrl,     setAddingUrl]    = useState(null);
 
   // Generating
   const [generating,  setGenerating] = useState(false);
@@ -112,7 +117,7 @@ export default function Setup() {
     }
   }, [step]);
 
-  /* ── Step 1 → 2: Claude interprets input ─────────────────────────────── */
+  /* ── Step 1 → 2: Claude interprets ───────────────────────────────────── */
   async function handleInterpret() {
     if (!input.trim() || thinking) return;
     setThinking(true);
@@ -125,9 +130,10 @@ export default function Setup() {
       if (!data.success) throw new Error('Failed');
       setProfile(data.profile);
       setTopics(data.topics || []);
-      setPrompts(data.prompts || []);
+      setSubOptions(data.sub_options || {});
       setSummary(data.summary || '');
-      setSelected(new Set()); // reset selections
+      setOpenTopics(new Set());
+      setSelectedSubs({});
       setStep(2);
     } catch {
       toast('Something went wrong — try again', 'error');
@@ -136,28 +142,79 @@ export default function Setup() {
     }
   }
 
-  /* ── Toggle a resonance prompt ────────────────────────────────────────── */
-  function togglePrompt(text) {
-    setSelected(prev => {
+  /* ── Toggle topic chip expansion ─────────────────────────────────────── */
+  function toggleTopic(topic) {
+    setOpenTopics(prev => {
       const next = new Set(prev);
-      next.has(text) ? next.delete(text) : next.add(text);
+      next.has(topic) ? next.delete(topic) : next.add(topic);
       return next;
     });
   }
 
-  /* ── Remove a topic chip ──────────────────────────────────────────────── */
-  function removeTopic(t) {
-    setTopics(prev => prev.filter(x => x !== t));
+  /* ── Toggle a sub-option ──────────────────────────────────────────────── */
+  function toggleSub(topic, phrase) {
+    setSelectedSubs(prev => {
+      const topicSet = new Set(prev[topic] || []);
+      topicSet.has(phrase) ? topicSet.delete(phrase) : topicSet.add(phrase);
+      return { ...prev, [topic]: topicSet };
+    });
   }
 
-  /* ── Step 2 → 3: confirm profile ─────────────────────────────────────── */
-  function handleConfirm() {
-    // Enrich profile with selected resonance signals
-    const enriched = selected.size > 0
-      ? `${profile} Specifically resonates with: ${[...selected].join('; ')}.`
-      : profile;
+  /* ── Compute live profile preview ────────────────────────────────────── */
+  function buildEnrichedProfile() {
+    const allSelected = Object.entries(selectedSubs)
+      .flatMap(([, set]) => [...set]);
+    if (allSelected.length === 0) return profile;
+    return `${profile} Specifically interested in: ${allSelected.join('; ')}.`;
+  }
+
+  /* ── Step 2 → 3: load test stacks ────────────────────────────────────── */
+  async function handleConfirmTopics() {
+    const enriched = buildEnrichedProfile();
     setProfile(enriched);
     setStep(3);
+    setStacksLoading(true);
+    setStacks([]);
+    setStackVotes({});
+    try {
+      const selectedSubOptionsPlain = {};
+      Object.entries(selectedSubs).forEach(([t, set]) => {
+        selectedSubOptionsPlain[t] = [...set];
+      });
+      const res  = await fetch('/api/onboard-stacks', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ topics, selectedSubOptions: selectedSubOptionsPlain, profile: enriched }),
+      });
+      const data = await res.json();
+      if (data.stacks) setStacks(data.stacks);
+    } catch {
+      toast('Could not load test stacks', 'error');
+    } finally {
+      setStacksLoading(false);
+    }
+  }
+
+  /* ── Vote on a stack ──────────────────────────────────────────────────── */
+  function voteStack(id, vote) {
+    setStackVotes(prev => {
+      if (prev[id] === vote) {
+        const next = { ...prev };
+        delete next[id];
+        return next;
+      }
+      return { ...prev, [id]: vote };
+    });
+  }
+
+  /* ── Step 3 → 4: incorporate votes into profile ──────────────────────── */
+  function handleConfirmStacks() {
+    const liked    = stacks.filter(s => stackVotes[s.id] === 'up').map(s => s.vibe);
+    const disliked = stacks.filter(s => stackVotes[s.id] === 'down').map(s => s.vibe);
+    let enriched   = profile;
+    if (liked.length)    enriched += ` Liked reading style: ${liked.join(', ')}.`;
+    if (disliked.length) enriched += ` Not interested in: ${disliked.join(', ')}.`;
+    setProfile(enriched);
+    setStep(4);
   }
 
   /* ── Publications ─────────────────────────────────────────────────────── */
@@ -191,7 +248,6 @@ export default function Setup() {
     toast(`Removed ${name}`, 'info');
   }
 
-  // Suggested pubs that match selected topics
   const suggestedPubs = suggestions
     .filter(cat => topics.some(t =>
       cat.category.toLowerCase().includes(t.toLowerCase()) ||
@@ -204,7 +260,7 @@ export default function Setup() {
 
   /* ── Final: save + generate ───────────────────────────────────────────── */
   async function handleGenerate() {
-    setStep(4);
+    setStep(5);
     setGenerating(true);
 
     setGenStatus('Saving your profile…');
@@ -227,10 +283,8 @@ export default function Setup() {
     router.push('/');
   }
 
-  /* ════════════════════════════════════════════════════════════════════════
-      STEP 4 — Generating screen
-  ════════════════════════════════════════════════════════════════════════ */
-  if (step === 4) {
+  /* ══ STEP 5: Generating ════════════════════════════════════════════════ */
+  if (step === 5) {
     return (
       <div style={{
         minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -264,15 +318,14 @@ export default function Setup() {
           </div>
           <style>{`
             @keyframes progressFill { 0% { width: 5%; } 60% { width: 75%; } 90% { width: 90%; } 100% { width: 96%; } }
+            @keyframes orbFloat { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
           `}</style>
         </div>
       </div>
     );
   }
 
-  /* ════════════════════════════════════════════════════════════════════════
-      SHARED WRAPPER
-  ════════════════════════════════════════════════════════════════════════ */
+  /* ══ SHARED WRAPPER ════════════════════════════════════════════════════ */
   return (
     <div style={{ minHeight: '100vh', background: '#fff' }}>
       <div style={{ maxWidth: 640, margin: '0 auto', padding: 'clamp(2rem,6vw,4rem) 1.5rem' }}>
@@ -287,9 +340,9 @@ export default function Setup() {
           </span>
         </div>
 
-        <Steps current={step} total={3} />
+        <Steps current={step} total={4} />
 
-        {/* ══ STEP 1: What's on your mind? ══════════════════════════════════ */}
+        {/* ══ STEP 1: What's on your mind? ══════════════════════════════ */}
         {step === 1 && (
           <div>
             <p style={{
@@ -297,7 +350,7 @@ export default function Setup() {
               letterSpacing: '.12em', textTransform: 'uppercase',
               color: C.muted, marginBottom: '1rem',
             }}>
-              Step 1 of 3 — Your mind
+              Step 1 of 4 — Your mind
             </p>
             <h1 style={{
               fontFamily: 'var(--font-display)', fontVariationSettings: "'opsz' 48",
@@ -368,7 +421,7 @@ export default function Setup() {
           </div>
         )}
 
-        {/* ══ STEP 2: Confirm + resonance ═══════════════════════════════════ */}
+        {/* ══ STEP 2: Topic tokens + sub-options ════════════════════════ */}
         {step === 2 && (
           <div>
             <p style={{
@@ -376,85 +429,118 @@ export default function Setup() {
               letterSpacing: '.12em', textTransform: 'uppercase',
               color: C.muted, marginBottom: '1rem',
             }}>
-              Step 2 of 3 — Confirm
+              Step 2 of 4 — Your interests
             </p>
             <h1 style={{
               fontFamily: 'var(--font-display)', fontVariationSettings: "'opsz' 48",
               fontSize: 'clamp(1.8rem,4vw,2.5rem)', fontWeight: 900,
-              color: C.ink, lineHeight: 1.1, marginBottom: '.75rem',
+              color: C.ink, lineHeight: 1.1, marginBottom: '.5rem',
             }}>
-              Here's what we understood
+              Here's what we got
             </h1>
             <p style={{
               fontFamily: 'var(--font-body)', fontSize: '.9rem',
               color: C.muted, lineHeight: 1.6, marginBottom: '2rem',
             }}>
-              {summary}
+              {summary} Tap a topic to pick the angles that matter most to you.
             </p>
 
-            {/* Topic tags */}
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '.5rem', marginBottom: '2rem' }}>
-              {topics.map(t => (
-                <span key={t} style={{
-                  display: 'inline-flex', alignItems: 'center', gap: 5,
-                  padding: '6px 12px', borderRadius: 20,
-                  background: C.orangeLight, border: `1.5px solid ${C.orange}`,
-                  fontFamily: 'var(--font-body)', fontSize: '.78rem', fontWeight: 700,
-                  color: C.orange,
-                }}>
-                  {t}
-                  <button
-                    onClick={() => removeTopic(t)}
-                    style={{
-                      background: 'none', border: 'none', padding: 0,
-                      color: C.orange, cursor: 'pointer', fontSize: '.7rem',
-                      lineHeight: 1, marginLeft: 2,
-                    }}
-                  >
-                    ✕
-                  </button>
-                </span>
-              ))}
+            {/* Topic chips + inline sub-options */}
+            <div style={{ marginBottom: '2rem' }}>
+              {topics.map(topic => {
+                const isOpen     = openTopics.has(topic);
+                const opts       = subOptions[topic] || [];
+                const topicSubs  = selectedSubs[topic] || new Set();
+                const hasSelected = topicSubs.size > 0;
+
+                return (
+                  <div key={topic} style={{ marginBottom: '.5rem' }}>
+                    {/* Chip */}
+                    <button
+                      onClick={() => toggleTopic(topic)}
+                      style={{
+                        display: 'inline-flex', alignItems: 'center', gap: 6,
+                        padding: '8px 16px', borderRadius: 24,
+                        border: `1.5px solid ${isOpen || hasSelected ? C.orange : C.rule}`,
+                        background: isOpen || hasSelected ? C.orangeLight : '#fff',
+                        fontFamily: 'var(--font-body)', fontSize: '.88rem', fontWeight: 700,
+                        color: isOpen || hasSelected ? C.orange : '#444',
+                        cursor: 'pointer', transition: 'all .15s',
+                      }}
+                    >
+                      {hasSelected && <span style={{ fontSize: '.7rem' }}>✓</span>}
+                      {topic}
+                      <span style={{
+                        fontSize: '.65rem', opacity: .6,
+                        transform: isOpen ? 'rotate(180deg)' : 'none',
+                        transition: 'transform .2s',
+                        display: 'inline-block',
+                      }}>▼</span>
+                    </button>
+
+                    {/* Sub-options — slide down when open */}
+                    {isOpen && opts.length > 0 && (
+                      <div style={{
+                        marginTop: '.5rem',
+                        padding: '1rem',
+                        background: C.soft,
+                        border: `1px solid ${C.rule}`,
+                        borderRadius: 10,
+                        display: 'flex', flexDirection: 'column', gap: '.4rem',
+                        animation: 'slideDown .2s ease-out',
+                      }}>
+                        <p style={{
+                          fontFamily: 'var(--font-body)', fontSize: '.7rem', fontWeight: 700,
+                          letterSpacing: '.08em', textTransform: 'uppercase',
+                          color: C.muted, marginBottom: '.25rem',
+                        }}>
+                          Which angles resonate?
+                        </p>
+                        {opts.map(phrase => {
+                          const sel = topicSubs.has(phrase);
+                          return (
+                            <button
+                              key={phrase}
+                              onClick={() => toggleSub(topic, phrase)}
+                              style={{
+                                textAlign: 'left',
+                                padding: '10px 14px', borderRadius: 8,
+                                border: `1.5px solid ${sel ? C.orange : C.rule}`,
+                                background: sel ? C.orangeLight : '#fff',
+                                fontFamily: 'var(--font-body)', fontSize: '.85rem',
+                                fontWeight: sel ? 700 : 400,
+                                color: sel ? C.orange : '#333',
+                                cursor: 'pointer', transition: 'all .12s',
+                                display: 'flex', alignItems: 'center', gap: 8,
+                              }}
+                            >
+                              <span style={{ opacity: sel ? 1 : .25, fontSize: '.75rem' }}>
+                                {sel ? '✓' : '○'}
+                              </span>
+                              {phrase}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
               <button
                 onClick={() => setStep(1)}
                 style={{
                   display: 'inline-flex', alignItems: 'center', gap: 4,
-                  padding: '6px 12px', borderRadius: 20,
+                  padding: '8px 14px', borderRadius: 24,
                   background: 'transparent', border: `1.5px dashed ${C.rule}`,
                   fontFamily: 'var(--font-body)', fontSize: '.78rem', fontWeight: 500,
-                  color: C.muted, cursor: 'pointer',
+                  color: C.muted, cursor: 'pointer', marginTop: '.25rem',
                 }}
               >
                 ✏ Edit
               </button>
             </div>
 
-            {/* Resonance prompts */}
-            <div style={{ marginBottom: '2.5rem' }}>
-              <p style={{
-                fontFamily: 'var(--font-body)', fontSize: '.8rem', fontWeight: 700,
-                color: C.ink, marginBottom: '.35rem',
-              }}>
-                Tap anything that resonates
-              </p>
-              <p style={{
-                fontFamily: 'var(--font-body)', fontSize: '.78rem',
-                color: C.muted, marginBottom: '1rem', lineHeight: 1.5,
-              }}>
-                This tells us exactly how deep to go. Skip it if you'd rather be surprised.
-              </p>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '.5rem' }}>
-                {prompts.map(p => (
-                  <PromptCard
-                    key={p} text={p}
-                    selected={selected.has(p)}
-                    onClick={() => togglePrompt(p)}
-                  />
-                ))}
-              </div>
-            </div>
-
-            {/* What Claude will see */}
+            {/* Live profile preview */}
             <div style={{
               padding: '1rem 1.25rem', background: C.soft,
               border: `1px solid ${C.rule}`, borderRadius: 8, marginBottom: '2rem',
@@ -470,15 +556,12 @@ export default function Setup() {
                 fontFamily: 'var(--font-display)', fontVariationSettings: "'opsz' 14",
                 fontSize: '.82rem', fontStyle: 'italic', color: '#444', lineHeight: 1.7,
               }}>
-                {selected.size > 0
-                  ? `${profile} Specifically resonates with: ${[...selected].join('; ')}.`
-                  : profile
-                }
+                {buildEnrichedProfile()}
               </p>
             </div>
 
             <button
-              onClick={handleConfirm}
+              onClick={handleConfirmTopics}
               style={{
                 width: '100%', padding: '15px', borderRadius: 10,
                 background: C.orange, color: '#fff',
@@ -501,10 +584,11 @@ export default function Setup() {
             >
               ← Let me reword that
             </button>
+            <style>{`@keyframes slideDown { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: none; } }`}</style>
           </div>
         )}
 
-        {/* ══ STEP 3: Publications ══════════════════════════════════════════ */}
+        {/* ══ STEP 3: Test stacks ════════════════════════════════════════ */}
         {step === 3 && (
           <div>
             <p style={{
@@ -512,7 +596,149 @@ export default function Setup() {
               letterSpacing: '.12em', textTransform: 'uppercase',
               color: C.muted, marginBottom: '1rem',
             }}>
-              Step 3 of 3 — Publications
+              Step 3 of 4 — Your taste
+            </p>
+            <h1 style={{
+              fontFamily: 'var(--font-display)', fontVariationSettings: "'opsz' 48",
+              fontSize: 'clamp(1.8rem,4vw,2.5rem)', fontWeight: 900,
+              color: C.ink, lineHeight: 1.1, marginBottom: '.5rem',
+            }}>
+              Which of these<br />feels right?
+            </h1>
+            <p style={{
+              fontFamily: 'var(--font-body)', fontSize: '.9rem',
+              color: C.muted, lineHeight: 1.6, marginBottom: '2rem',
+            }}>
+              Three sample reading lists built for your interests. Vote on what resonates — this shapes how Claude curates for you.
+            </p>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginBottom: '2rem' }}>
+              {stacksLoading
+                ? [0, 1, 2].map(i => <StackSkeleton key={i} />)
+                : stacks.map(stack => {
+                    const vote = stackVotes[stack.id];
+                    return (
+                      <div key={stack.id} style={{
+                        border: `1.5px solid ${
+                          vote === 'up' ? C.orange :
+                          vote === 'down' ? '#E8C5C5' :
+                          C.rule
+                        }`,
+                        borderRadius: 12,
+                        background: vote === 'up' ? C.orangeLight : vote === 'down' ? C.redLight : '#fff',
+                        padding: '1.25rem',
+                        transition: 'all .2s',
+                      }}>
+                        <p style={{
+                          fontFamily: 'var(--font-display)', fontVariationSettings: "'opsz' 18",
+                          fontSize: '1.05rem', fontWeight: 800, color: C.ink,
+                          marginBottom: '.25rem',
+                        }}>
+                          {stack.vibe}
+                        </p>
+                        <p style={{
+                          fontFamily: 'var(--font-body)', fontSize: '.78rem',
+                          color: C.muted, marginBottom: '1rem', lineHeight: 1.5,
+                        }}>
+                          {stack.description}
+                        </p>
+
+                        <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 1.1rem', display: 'flex', flexDirection: 'column', gap: '.45rem' }}>
+                          {stack.posts.map((post, i) => (
+                            <li key={i} style={{
+                              fontFamily: 'var(--font-body)', fontSize: '.84rem',
+                              color: '#333', lineHeight: 1.45,
+                              paddingLeft: '1.1rem', position: 'relative',
+                            }}>
+                              <span style={{ position: 'absolute', left: 0, color: C.orange, fontWeight: 700 }}>·</span>
+                              {post}
+                            </li>
+                          ))}
+                        </ul>
+
+                        <div style={{ display: 'flex', gap: '.5rem' }}>
+                          <button
+                            onClick={() => voteStack(stack.id, 'up')}
+                            style={{
+                              flex: 1, padding: '9px', borderRadius: 8,
+                              border: `1.5px solid ${vote === 'up' ? C.orange : C.rule}`,
+                              background: vote === 'up' ? C.orange : 'transparent',
+                              color: vote === 'up' ? '#fff' : C.muted,
+                              fontFamily: 'var(--font-body)', fontSize: '.82rem', fontWeight: 700,
+                              cursor: 'pointer', transition: 'all .15s',
+                            }}
+                          >
+                            👍 Yes, this
+                          </button>
+                          <button
+                            onClick={() => voteStack(stack.id, 'down')}
+                            style={{
+                              flex: 1, padding: '9px', borderRadius: 8,
+                              border: `1.5px solid ${vote === 'down' ? '#E53E3E' : C.rule}`,
+                              background: vote === 'down' ? '#E53E3E' : 'transparent',
+                              color: vote === 'down' ? '#fff' : C.muted,
+                              fontFamily: 'var(--font-body)', fontSize: '.82rem', fontWeight: 700,
+                              cursor: 'pointer', transition: 'all .15s',
+                            }}
+                          >
+                            👎 Not really
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })
+              }
+            </div>
+
+            {!stacksLoading && Object.keys(stackVotes).length === 0 && (
+              <p style={{
+                fontFamily: 'var(--font-body)', fontSize: '.78rem',
+                color: C.muted, textAlign: 'center', marginBottom: '1.25rem',
+              }}>
+                Vote on at least one to continue
+              </p>
+            )}
+
+            <button
+              onClick={handleConfirmStacks}
+              disabled={stacksLoading || Object.keys(stackVotes).length === 0}
+              style={{
+                width: '100%', padding: '15px', borderRadius: 10,
+                background: Object.keys(stackVotes).length > 0 ? C.orange : C.rule,
+                color: Object.keys(stackVotes).length > 0 ? '#fff' : C.muted,
+                fontFamily: 'var(--font-body)', fontSize: '1rem', fontWeight: 700,
+                border: 'none',
+                cursor: Object.keys(stackVotes).length > 0 ? 'pointer' : 'not-allowed',
+                boxShadow: Object.keys(stackVotes).length > 0 ? `0 4px 20px ${C.orange}44` : 'none',
+                marginBottom: '.75rem',
+                transition: 'all .2s',
+              }}
+            >
+              Continue →
+            </button>
+            <button
+              onClick={() => setStep(2)}
+              style={{
+                width: '100%', padding: '11px', borderRadius: 10,
+                background: 'transparent', color: C.muted,
+                fontFamily: 'var(--font-body)', fontSize: '.85rem',
+                border: `1.5px solid ${C.rule}`, cursor: 'pointer',
+              }}
+            >
+              ← Back
+            </button>
+          </div>
+        )}
+
+        {/* ══ STEP 4: Publications ══════════════════════════════════════ */}
+        {step === 4 && (
+          <div>
+            <p style={{
+              fontFamily: 'var(--font-body)', fontSize: '.72rem', fontWeight: 700,
+              letterSpacing: '.12em', textTransform: 'uppercase',
+              color: C.muted, marginBottom: '1rem',
+            }}>
+              Step 4 of 4 — Publications
             </p>
             <h1 style={{
               fontFamily: 'var(--font-display)', fontVariationSettings: "'opsz' 48",
@@ -529,7 +755,6 @@ export default function Setup() {
               <strong style={{ color: C.ink }}>Totally optional.</strong> We'll discover great reads regardless.
             </p>
 
-            {/* URL input */}
             <form onSubmit={handleAddPub} style={{ display: 'flex', gap: '.5rem', marginBottom: '1.25rem' }}>
               <input
                 value={pubInput} onChange={e => setPubInput(e.target.value)}
@@ -557,7 +782,6 @@ export default function Setup() {
               </button>
             </form>
 
-            {/* Added pubs */}
             {publications.length > 0 && (
               <div style={{ marginBottom: '1.5rem' }}>
                 {publications.map(p => (
@@ -578,7 +802,6 @@ export default function Setup() {
               </div>
             )}
 
-            {/* Smart suggestions */}
             {suggestedPubs.length > 0 && (
               <div style={{ marginBottom: '2rem' }}>
                 <p style={{
@@ -631,7 +854,6 @@ export default function Setup() {
               </div>
             )}
 
-            {/* CTAs */}
             <button
               onClick={handleGenerate}
               style={{
@@ -643,12 +865,10 @@ export default function Setup() {
                 marginBottom: '.75rem',
               }}
             >
-              {publications.length > 0
-                ? `Build my list →`
-                : 'Skip — build my list →'}
+              {publications.length > 0 ? 'Build my list →' : 'Skip — build my list →'}
             </button>
             <button
-              onClick={() => setStep(2)}
+              onClick={() => setStep(3)}
               style={{
                 width: '100%', padding: '11px', borderRadius: 10,
                 background: 'transparent', color: C.muted,
@@ -660,6 +880,7 @@ export default function Setup() {
             </button>
           </div>
         )}
+
       </div>
     </div>
   );

@@ -12,7 +12,7 @@ export default withAuth(async (req, res, user, supabase) => {
   try {
     const message = await client.messages.create({
       model: 'claude-sonnet-4-6',
-      max_tokens: 1024,
+      max_tokens: 1800,
       messages: [{
         role: 'user',
         content: `You are helping someone set up a personalized reading profile for Stacksome — an intelligent Substack curation app that finds the best essays, analyses, and ideas across the internet.
@@ -22,16 +22,19 @@ The user was asked: "What's on your mind right now? What do you want to get smar
 Their answer: "${input.trim()}"
 
 Your job:
-1. Write a rich, specific interest profile (2-4 sentences) that will be used to curate posts for this person. Expand vague terms into specific adjacent areas. If they say "manufacturing", think: factory economics, supply chains, industrial policy, capital-intensive businesses, automation, materials science, operations. Make it vivid and detailed — this is what Claude will read before picking every article.
-2. Extract 5-8 short topic tags (1-3 words each) that represent their core interests. These appear as clickable filter pills.
-3. Write 8 "resonance prompts" — short phrases (6-10 words) that describe article angles they might love. These look like mini-headlines. Cover their main interests AND 2-3 surprising adjacent areas they probably haven't thought of. Format like: "Why most factories fail before they scale" or "The hidden economics of supply chains".
+1. Write a rich, specific interest profile (2-4 sentences) that will be used to curate posts for this person. Expand vague terms into specific adjacent areas. Make it vivid and detailed — this is what Claude will read before picking every article.
+2. Extract exactly 3-4 short topic tags (1-3 words each) that represent their broadest core interests. Keep them human and evocative, not jargon. These appear as clickable chips.
+3. For each topic tag, write exactly 5 "sub-option" phrases (8-12 words each) that describe specific angles or lenses within that topic. These look like mini-headlines — punchy, opinionated, specific. Cover the main angles AND 1-2 surprising adjacent ones. Example for "Manufacturing": "Why most factories fail before they scale", "The hidden economics of supply chains", "Industrial policy and the reshoring wave", "Automation, labour, and what comes next", "Capital intensity and the returns nobody talks about".
 4. Write one short summary sentence (under 12 words) describing what Stacksome will find for them.
 
 Return ONLY valid JSON, no markdown:
 {
   "profile": "...",
-  "topics": ["...", "..."],
-  "prompts": ["...", "...", "...", "...", "...", "...", "...", "..."],
+  "topics": ["...", "...", "..."],
+  "sub_options": {
+    "TopicName": ["phrase 1", "phrase 2", "phrase 3", "phrase 4", "phrase 5"],
+    "TopicName2": ["phrase 1", "phrase 2", "phrase 3", "phrase 4", "phrase 5"]
+  },
   "summary": "..."
 }`
       }],
@@ -47,21 +50,22 @@ Return ONLY valid JSON, no markdown:
 
   } catch (err) {
     console.error('[onboard] Claude error:', err.message);
-    // Graceful fallback
-    return res.json({
-      success: true,
-      profile: `Interested in: ${input.trim()}. Looking for rigorous, first-principles writing that builds real understanding.`,
-      topics: input.trim().split(/[,\s]+/).filter(w => w.length > 3).slice(0, 6).map(w => w.charAt(0).toUpperCase() + w.slice(1)),
-      prompts: [
+    const words = input.trim().split(/[,\s]+/).filter(w => w.length > 3).slice(0, 3).map(w => w.charAt(0).toUpperCase() + w.slice(1));
+    const sub_options = {};
+    words.forEach(t => {
+      sub_options[t] = [
         'The first principles behind this field',
         'What most people get wrong about this',
         'How the best practitioners actually think',
         'The history that explains the present',
-        'Contrarian takes worth considering',
-        'Where this field intersects with others',
-        'The frameworks that actually work',
-        'What the data really shows',
-      ],
+        'Where this intersects with everything else',
+      ];
+    });
+    return res.json({
+      success: true,
+      profile: `Interested in: ${input.trim()}. Looking for rigorous, first-principles writing that builds real understanding.`,
+      topics: words,
+      sub_options,
       summary: `Deep reads on ${input.trim().slice(0, 40)}`,
     });
   }
