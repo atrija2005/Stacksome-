@@ -8,6 +8,39 @@ const C = {
   red: '#E53E3E', redLight: '#FFF5F5',
 };
 
+const FALLBACK_STACKS = [
+  {
+    id: 'contrarian',
+    vibe: 'The Contrarian Take',
+    description: 'Writing that challenges consensus and makes you reconsider',
+    posts: [
+      'Why the conventional wisdom in your field is quietly falling apart',
+      'The uncomfortable data point everyone in this industry ignores',
+      'What the most successful people here believe that nobody says out loud',
+    ],
+  },
+  {
+    id: 'first_principles',
+    vibe: 'First Principles',
+    description: 'From the ground up — foundational thinking that actually holds',
+    posts: [
+      'Strip it back: what is this field actually trying to solve',
+      'The mental models that practitioners use but rarely write down',
+      'Why most frameworks fail and what the underlying logic really is',
+    ],
+  },
+  {
+    id: 'big_picture',
+    vibe: 'The Big Picture',
+    description: 'Macro trends and systems thinking, zoomed all the way out',
+    posts: [
+      'The structural shift happening right now that most people are missing',
+      'How this connects to three other things that are also changing fast',
+      'Ten years from now, this will look obvious — here is why',
+    ],
+  },
+];
+
 function ThinkingDots() {
   return (
     <span style={{ display: 'inline-flex', gap: 4, alignItems: 'center' }}>
@@ -209,16 +242,20 @@ export default function Setup() {
     try {
       const selectedSubOptionsPlain = {};
       Object.entries(selectedSubs).forEach(([t, set]) => {
-        selectedSubOptionsPlain[t] = [...set];
+        selectedSubOptionsPlain[t] = [...(set instanceof Set ? set : [])];
       });
       const res  = await fetch('/api/onboard-stacks', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ topics, selectedSubOptions: selectedSubOptionsPlain, profile: enriched }),
       });
       const data = await res.json();
-      if (data.stacks) setStacks(data.stacks);
+      if (data.stacks?.length) {
+        setStacks(data.stacks);
+      } else {
+        setStacks(FALLBACK_STACKS);
+      }
     } catch {
-      toast('Could not load test stacks', 'error');
+      setStacks(FALLBACK_STACKS);
     } finally {
       setStacksLoading(false);
     }
