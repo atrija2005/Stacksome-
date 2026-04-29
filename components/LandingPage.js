@@ -255,15 +255,15 @@ export default function LandingPage() {
     if (!heroInput.trim()) return;
     sessionStorage.setItem('ss_pending_interests', heroInput.trim());
     if (process.env.NEXT_PUBLIC_DEV_AUTH_BYPASS === 'true') {
-      router.push('/?start=1');
+      router.push('/setup');
       return;
     }
     if (configured) {
       setSigningIn(true);
       try { await signInWithGoogle(); }
-      catch { router.push('/?start=1'); setSigningIn(false); }
+      catch { router.push('/setup'); setSigningIn(false); }
     } else {
-      router.push('/?start=1');
+      router.push('/setup');
     }
   }
 

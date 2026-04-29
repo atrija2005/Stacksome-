@@ -404,8 +404,9 @@ export default function Home() {
     setLoading(false);
     const pending = sessionStorage.getItem('ss_pending_interests');
     if (pending) {
-      setFreeText(pending);
-      sessionStorage.removeItem('ss_pending_interests');
+      // Always route through setup so new users get the full onboarding flow
+      router.replace('/setup');
+      return;
     } else if (queryInterests) {
       setFreeText(queryInterests);
     }
