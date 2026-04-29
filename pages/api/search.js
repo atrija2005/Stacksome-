@@ -1,7 +1,8 @@
 import { withAuth } from '../../lib/auth';
 import { getRecentPosts } from '../../lib/db';
 import { suggestPublications } from '../../lib/claude';
-import { discoverFromSuggestedPubs, searchSubstack } from '../../lib/substack-discover';
+import { discoverFromSuggestedPubs } from '../../lib/substack-discover';
+import { searchSubstackPosts } from '../../lib/scraper';
 
 function scorePost(post, keywords) {
   const t = (post.title || '').toLowerCase();
@@ -44,10 +45,10 @@ export default withAuth(async (req, res, user, supabase) => {
       }));
   } catch {}
 
-  // ── 2. Direct Substack search — hits Substack's own full-text search API ──
+  // ── 2. Direct search via Firecrawl — searches "query site:substack.com" ───
   let substackResults = [];
   try {
-    const hits = await searchSubstack(q, 25);
+    const hits = await searchSubstackPosts(q, 20);
     substackResults = hits.map(p => ({
       publication: p.publication_name || 'Substack',
       title:       p.title,
