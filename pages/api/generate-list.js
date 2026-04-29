@@ -149,6 +149,17 @@ export default withAuth(async (req, res, user, supabase) => {
 
   ranked = ranked.filter(p => p.url && p.title);
 
+  // Final relevance guard: drop any post that has zero keyword overlap with the goal
+  // Uses broad match so synonyms / related terms count (e.g. "ai" matches "artificial intelligence")
+  const goalLower = (refinedGoal || profileText).toLowerCase();
+  const goalTokens = goalLower.replace(/[^a-z0-9 ]/g, ' ').split(/\s+/).filter(w => w.length > 3);
+  if (goalTokens.length > 0) {
+    ranked = ranked.filter(p => {
+      const text = `${p.title || ''} ${p.description || ''} ${p.publication_name || ''}`.toLowerCase();
+      return goalTokens.some(w => text.includes(w));
+    });
+  }
+
   // Save to DB — wrapped so a missing table doesn't crash the response
   try {
     const weekLabel = getWeekLabel();
