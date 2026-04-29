@@ -110,6 +110,9 @@ export default withAuth(async (req, res, user, supabase) => {
     }
   }
 
+  // Hard filter: Substack only — drop anything not on substack.com
+  pool = pool.filter(p => p.url && p.url.includes('substack.com'));
+
   if (excludeUrls.length) pool = pool.filter(p => !excludeUrls.includes(p.url));
 
   console.log(`[generate-list] Pool: ${pool.length} posts for "${profileText.slice(0, 60)}"`);
