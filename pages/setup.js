@@ -340,10 +340,26 @@ export default function Setup() {
     await fetch('/api/fetch-feeds', { method: 'POST' }).catch(() => {});
 
     setGenStatus('Claude is curating your first list…');
-    await fetch('/api/generate-list', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({}),
-    }).catch(() => {});
+    let posts = [];
+    try {
+      const res  = await fetch('/api/generate-list', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ interests: profile }),
+      });
+      const data = await res.json();
+      posts = data.posts || [];
+    } catch { /* non-fatal — user can regenerate on home */ }
+
+    // Save generated posts to localStorage so index.js can display them immediately
+    if (posts.length > 0) {
+      try {
+        const id  = `ctx_${Date.now()}`;
+        const name = profile.split(/[,.]/)[0].trim().slice(0, 40) || 'My List';
+        const ctx = { id, interests: profile, mode: 'quick', name, posts, signals: {}, createdAt: new Date().toISOString() };
+        localStorage.setItem('ss_contexts', JSON.stringify([ctx]));
+        localStorage.setItem('ss_active_ctx', id);
+      } catch { /* ignore */ }
+    }
 
     setGenStatus('Done — taking you in…');
     await new Promise(r => setTimeout(r, 700));
