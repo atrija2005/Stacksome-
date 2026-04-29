@@ -1,7 +1,7 @@
 import { withAuth } from '../../lib/auth';
 import { getRecentPosts } from '../../lib/db';
 import { suggestPublications } from '../../lib/claude';
-import { discoverFromSuggestedPubs } from '../../lib/substack-discover';
+import { discoverFromSuggestedPubs, searchSubstack } from '../../lib/substack-discover';
 
 function scorePost(post, keywords) {
   const t = (post.title || '').toLowerCase();
@@ -44,12 +44,30 @@ export default withAuth(async (req, res, user, supabase) => {
       }));
   } catch {}
 
-  // ── 2. Live Substack discovery — Claude suggests pubs + engagement scoring
+  // ── 2. Direct Substack search — hits Substack's own full-text search API ──
+  let substackResults = [];
+  try {
+    const hits = await searchSubstack(q, 25);
+    substackResults = hits.map(p => ({
+      publication: p.publication_name || 'Substack',
+      title:       p.title,
+      url:         p.url,
+      description: p.description || '',
+      topic:       topicLabel,
+      _score:      100, // direct search hits — always relevant
+      _source:     'substack-search',
+    }));
+    console.log(`[search] Substack search: ${substackResults.length} hits for "${q}"`);
+  } catch (err) {
+    console.warn('[search] Substack direct search failed:', err.message);
+  }
+
+  // ── 3. Publication-based discovery — Claude suggests pubs, fetch recent posts
   let liveResults = [];
   try {
     const pubUrls = await suggestPublications(q);
     if (pubUrls.length > 0) {
-      const posts = await discoverFromSuggestedPubs(pubUrls, keywords, 40);
+      const posts = await discoverFromSuggestedPubs(pubUrls, keywords, 30);
       liveResults = posts
         .filter(p => p._profileScore > 0)
         .map(p => ({
@@ -67,14 +85,14 @@ export default withAuth(async (req, res, user, supabase) => {
     console.warn('[search] live discovery failed:', err.message);
   }
 
-  // ── 3. Merge — library first, then live, dedupe, max 2 per pub ─────────
+  // ── 4. Merge — library first, then Substack search hits, then pub discovery ──
   const seen     = new Set();
   const pubCount = {};
   const merged   = [];
 
-  for (const p of [...libraryResults, ...liveResults]) {
+  for (const p of [...libraryResults, ...substackResults, ...liveResults]) {
     if (!p.url || !p.title || seen.has(p.url)) continue;
-    if ((pubCount[p.publication] || 0) >= 2) continue;
+    if ((pubCount[p.publication] || 0) >= 3) continue;
     seen.add(p.url);
     pubCount[p.publication] = (pubCount[p.publication] || 0) + 1;
     merged.push(p);
